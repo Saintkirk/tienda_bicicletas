@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+ 
+{% block title %}Nueva bicicleta{% endblock %}
+ 
+{% block content %}
+<h1 class="mb-3">Registrar nueva bicicleta</h1>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button class="btn btn-success" type="submit">Guardar bicicleta</button>
+            <a class="btn btn-secondary" href="{% url 'lista_bicicletas' %}">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

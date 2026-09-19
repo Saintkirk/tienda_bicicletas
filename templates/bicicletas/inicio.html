@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+ 
+{% block title %}Inicio | Tienda de Bicicletas{% endblock %}
+ 
+{% block content %}
+<div class="p-5 mb-4 bg-white rounded-3 shadow-sm">
+    <h1 class="display-6">Administración de bicicletas</h1>
+    <p class="lead">Gestiona el catálogo de la tienda mediante un CRUD completo.</p>
+    <p>Actualmente existen <strong>{{ total_bicicletas }}</strong> bicicletas registradas.</p>
+    <a class="btn btn-primary" href="{% url 'lista_bicicletas' %}">Ir al catálogo</a>
+</div>
+{% endblock %}

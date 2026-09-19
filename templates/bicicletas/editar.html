@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+ 
+{% block title %}Editar bicicleta{% endblock %}
+ 
+{% block content %}
+<h1 class="mb-3">Editar bicicleta</h1>
+<div class="card shadow-sm border-warning">
+    <div class="card-body">
+        <p>Modifica los datos de <strong>{{ bicicleta }}</strong>.</p>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button class="btn btn-warning" type="submit">Guardar cambios</button>
+            <a class="btn btn-secondary" href="{% url 'lista_bicicletas' %}">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
