@@ -1,0 +1,37 @@
+{% extends 'bicicletas/base.html' %}
+{% block content %}
+<div class="container my-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title mb-3">Detalle de Venta: {{ venta.numero_venta }}</h2>
+            <p><strong>Cliente:</strong> {{ venta.cliente.nombre }} {{ venta.cliente.apellido }}</p>
+            <p><strong>Fecha:</strong> {{ venta.fecha_venta }}</p>
+            <p><strong>Método de Pago:</strong> {{ venta.get_metodo_pago_display }}</p>
+            
+            <h4 class="mt-4">Productos Vendidos</h4>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Bicicleta</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unitario</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in venta.items.all %}
+                    <tr>
+                        <td>{{ item.bicicleta.marca }} {{ item.bicicleta.modelo }}</td>
+                        <td>{{ item.cantidad }}</td>
+                        <td>${{ item.precio_unitario }}</td>
+                        <td>${{ item.subtotal }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <h4 class="text-end">Total: ${{ venta.total }}</h4>
+            <a href="{% url 'inicio' %}" class="btn btn-primary mt-3">Volver al Inicio</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
