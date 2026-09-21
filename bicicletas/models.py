@@ -2,6 +2,31 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
+class Categoria(models.Model):
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True, null=True)
+    activa = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.nombre
+
+
+class Marca(models.Model):
+    nombre = models.CharField(max_length=100, unique=True)
+    segmento = models.CharField(max_length=50, default="MASIVA") # Ej: ALTA_GAMA, MASIVA, URBANA
+
+    def __str__(self):
+        return self.nombre
+
+
+class Modelo(models.Model):
+    marca = models.ForeignKey(Marca, related_name="modelos", on_delete=models.CASCADE)
+    nombre = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.marca.nombre} - {self.nombre}"
+
+
 class Bicicleta(models.Model):
     TIPO_CHOICES = [
         ("MONTANA", "Montaña"),
@@ -11,127 +36,15 @@ class Bicicleta(models.Model):
         ("INFANTIL", "Infantil"),
     ]
 
-    MARCA_CHOICES = [
-        (
-            "Alta Gama e Internacionales",
-            [
-                ("TREK", "Trek"),
-                ("SPECIALIZED", "Specialized"),
-                ("GIANT", "Giant"),
-                ("SCOTT", "Scott"),
-                ("CANNONDALE", "Cannondale"),
-                ("ORBEA", "Orbea"),
-                ("PINARELLO", "Pinarello"),
-                ("BIANCHI", "Bianchi"),
-                ("CERVELO", "Cervélo"),
-                ("BMC", "BMC Switzerland"),
-                ("SANTA_CRuz", "Santa Cruz"),
-                ("YETI", "Yeti Cycles"),
-                ("GT", "GT Bicycles"),
-                ("MERIDA", "Merida"),
-                ("KTM", "KTM Bikes"),
-                ("CUBE", "Cube Bikes"),
-                ("FOCUS", "Focus Bikes"),
-                ("WILIER", "Wilier Triestina"),
-                ("COLNAGO", "Colnago"),
-                ("DE_ROSA", "De Rosa"),
-                ("RIDLEY", "Ridley"),
-                ("LOOK", "Look Cycle"),
-                ("TIME", "Time Sport"),
-                ("FACTOR", "Factor Bikes"),
-                ("ARGON_18", "Argon 18"),
-                ("LAPIERRE", "Lapierre"),
-                ("COMMENCAL", "Commencal"),
-                ("TRANSITION", "Transition Bikes"),
-                ("NORCO", "Norco"),
-                ("KONA", "Kona"),
-                ("ROCKY_MOUNTAIN", "Rocky Mountain"),
-                ("INTENSE", "Intense Cycles"),
-                ("EVIL", "Evil Bikes"),
-                ("IBIS", "Ibis Cycles"),
-                ("PIVOT", "Pivot Cycles"),
-                ("MACEK", "Macek"),
-                ("BANSHEE", "Banshee Bikes"),
-                ("NS_BIKES", "NS Bikes"),
-                ("DARTMOOR", "Dartmoor"),
-                ("STUMPJUMPER", "Stumpjumper"),
-            ],
-        ),
-        (
-            "Masivas y Populares en Chile",
-            [
-                ("OXFORD", "Oxford"),
-                ("UPLAND", "Upland"),
-                ("LEADER", "Leader"),
-                ("PRO_MAX", "Pro Max"),
-                ("AVANT", "Avant"),
-                ("ROBUSTA", "Robusta"),
-                ("KRONOS", "Kronos"),
-                ("WINDSOR", "Windsor"),
-                ("BENOTTO", "Benotto"),
-                ("MONGOOSE", "Mongoose"),
-                ("SCHWINN", "Schwinn"),
-                ("HARO", "Haro Bikes"),
-                ("DIAMONDBACK", "Diamondback"),
-                ("RALEIGH", "Raleigh"),
-                ("HASA", "Hasa"),
-                ("TRINX", "Trinx"),
-                ("JAVA", "Java Bikes"),
-                ("SAVA", "Sava"),
-                ("TWITTER", "Twitter Bikes"),
-                ("AUDACIOUS", "Audacious"),
-                ("MOOSE", "Moose"),
-                ("CANNON", "Cannon"),
-                ("STARK", "Stark"),
-                ("MOSSO", "Mosso"),
-                ("SHOGUN", "Shogun"),
-                ("KENSLER", "Kensler"),
-                ("ECLIPSE", "Eclipse"),
-                ("FROST", "Frost"),
-            ],
-        ),
-        (
-            "Urbanas, Plegables y Eléctricas",
-            [
-                ("DECATHLON", "Decathlon / B'Twin"),
-                ("ELECTRA", "Electra"),
-                ("BROOKLYN", "Brooklyn Bicycle Co."),
-                ("STRIDA", "Strida"),
-                ("BROMPTON", "Brompton"),
-                ("TERN", "Tern"),
-                ("DAHON", "Dahon"),
-                ("GAZELLE", "Gazelle"),
-                ("RAD_POWER", "Rad Power Bikes"),
-                ("HAIBIKE", "Haibike"),
-                ("SPECIALIZED_E", "Specialized Turbo"),
-                ("BULLS", "Bulls Bikes"),
-            ],
-        ),
-        (
-            "BMX y Freestyle",
-            [
-                ("PRIMO", "Primo"),
-                ("SUBROSA", "Subrosa"),
-                ("WETHEPEOPLE", "WeThePeople"),
-                ("DIAMOND", "Diamond"),
-                ("BSD", "BSD"),
-                ("ODYSSEY", "Odyssey"),
-                ("CULT", "Cult Crew"),
-                ("STOLEN", "Stolen Bikes"),
-                ("SE_BIKES", "SE Bikes"),
-                ("FIT_BIKE_CO", "Fit Bike Co."),
-            ],
-        ),
-        (
-            "Otras",
-            [
-                ("OTRA", "Otra / Genérica"),
-            ],
-        ),
+    ESTADO_CHOICES = [
+        ("DISPONIBLE", "Disponible"),
+        ("AGOTADO", "Agotado"),
+        ("RESERVADO", "Reservado"),
     ]
 
-    marca = models.CharField(max_length=40, choices=MARCA_CHOICES)
-    modelo = models.CharField(max_length=100)
+    # Relación directa con el modelo Modelo (que a su vez tiene la Marca)
+    modelo_rel = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=True, blank=True)
+    
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     aro = models.PositiveIntegerField(
         validators=[MinValueValidator(10), MaxValueValidator(29)]
@@ -143,6 +56,14 @@ class Bicicleta(models.Model):
     color = models.CharField(max_length=50)
     descripcion = models.TextField(blank=True)
     fecha_ingreso = models.DateField(auto_now_add=True)
+    
+    categoria_rel = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="DISPONIBLE")
+    stock_minimo = models.PositiveIntegerField(default=1)
+    especificaciones = models.TextField(blank=True, null=True)
+    es_oferta = models.BooleanField(default=False)
+    precio_oferta = models.DecimalField(max_digits=10, decimal_places=0, blank=True, null=True)
+    es_destacada = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-id"]
@@ -150,4 +71,56 @@ class Bicicleta(models.Model):
         verbose_name_plural = "Bicicletas"
 
     def __str__(self):
-        return f"{self.get_marca_display()} {self.modelo}"
+        if self.modelo_rel:
+            return f"{self.modelo_rel.marca.nombre} {self.modelo_rel.nombre}"
+        return f"Bicicleta #{self.id}"
+
+
+class Cliente(models.Model):
+    nombre = models.CharField(max_length=100)
+    apellido = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    telefono = models.CharField(max_length=20, blank=True, null=True)
+    direccion = models.TextField(blank=True, null=True)
+    ciudad = models.CharField(max_length=100, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.nombre} {self.apellido}"
+
+
+class Venta(models.Model):
+    METODO_PAGO_CHOICES = [
+        ("EFECTIVO", "Efectivo"),
+        ("TRANSFERENCIA", "Transferencia"),
+        ("TARJETA", "Tarjeta de Crédito/Débito"),
+    ]
+
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    fecha_venta = models.DateTimeField(auto_now_add=True)
+    total = models.DecimalField(max_digits=10, decimal_places=0, default=0)
+    metodo_pago = models.CharField(max_length=30, choices=METODO_PAGO_CHOICES, default="EFECTIVO")
+    impuesto = models.DecimalField(max_digits=10, decimal_places=0, default=0, blank=True, null=True)
+    descuento = models.DecimalField(max_digits=10, decimal_places=0, default=0, blank=True, null=True)
+    notas = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Venta #{self.id} - {self.cliente}"
+
+
+class ItemVenta(models.Model):
+    venta = models.ForeignKey(Venta, related_name="items", on_delete=models.CASCADE)
+    bicicleta = models.ForeignKey(Bicicleta, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField(default=1)
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=0)
+
+    def __str__(self):
+        return f"{self.cantidad}x {self.bicicleta} en Venta #{self.venta.id}"
+
+
+class CarritoItem(models.Model):
+    bicicleta = models.ForeignKey(Bicicleta, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField(default=1)
+    session_key = models.CharField(max_length=100, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.cantidad} de {self.bicicleta}"
