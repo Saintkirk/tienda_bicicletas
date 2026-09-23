@@ -100,7 +100,6 @@ class BicicletaForm(forms.ModelForm):
                     "max": MAX_PRECIO_CLP,
                     "maxlength": 8,
                     "inputmode": "numeric",
-                    # Permite sólo números y limita visualmente a 8 caracteres (suficiente para 10 millones)
                     "oninput": "this.value = this.value.replace(/\\D/g, '').slice(0, 8)",
                 }
             ),
@@ -150,7 +149,6 @@ class BicicletaForm(forms.ModelForm):
             ]
         )
 
-        # Textos de ayuda actualizados al nuevo tope de 10 millones
         self.fields["precio"].max_value = MAX_PRECIO_CLP
         self.fields["precio"].help_text = "Ingresa un valor entre $1 y $10.000.000 CLP."
         self.fields["precio_oferta"].max_value = MAX_PRECIO_CLP
@@ -163,17 +161,20 @@ class BicicletaForm(forms.ModelForm):
             marca_id = self.data.get("marca")
             modelo_id = self.data.get("modelo_rel")
         elif self.instance and self.instance.pk:
-            if self.instance.modelo_rel_id:
+            if self.instance.modelo_rel:
                 modelo_id = self.instance.modelo_rel_id
-                marca_id = self.instance.modelo_rel.marca_id
-            elif self.instance.modelo_rel:
-                marca_id = self.instance.modelo_rel.marca_id
+                if self.instance.modelo_rel.marca_id:
+                    marca_id = self.instance.modelo_rel.marca_id
+                    # Asignamos el initial de la marca para que se seleccione visualmente
+                    self.fields["marca"].initial = marca_id
 
         if marca_id:
             self.fields["modelo_rel"].queryset = Modelo.objects.filter(
                 marca_id=marca_id
             ).order_by("nombre")
             self.fields["modelo_rel"].empty_label = "Seleccione un modelo"
+            # Habilitamos el selector de modelo al editar
+            self.fields["modelo_rel"].widget.attrs.pop("disabled", None)
         else:
             self.fields["modelo_rel"].queryset = Modelo.objects.none()
 
@@ -185,8 +186,9 @@ class BicicletaForm(forms.ModelForm):
                         pk=modelo_inst.categoria_id
                     )
                     self.fields["categoria_rel"].initial = modelo_inst.categoria_id
-                else:
-                    self.fields["categoria_rel"].queryset = Categoria.objects.filter(activa=True)
+                    # Habilitamos categoría y aro al editar
+                    self.fields["categoria_rel"].widget.attrs.pop("disabled", None)
+                    self.fields["aro"].widget.attrs.pop("disabled", None)
             except Modelo.DoesNotExist:
                 pass
         

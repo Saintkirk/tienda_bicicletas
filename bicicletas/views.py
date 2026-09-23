@@ -215,7 +215,8 @@ class EliminarBicicletaView(DeleteView):
 def eliminar_multiple_bicicletas(request):
     """Elimina múltiples bicicletas seleccionadas desde el listado con transacción atómica."""
     if request.method == "POST":
-        selected_ids = request.POST.getlist('bicicleta_ids')
+        # CORREGIDO: Cambiado de 'bicicleta_ids' a 'selected_items' para calzar con el HTML
+        selected_ids = request.POST.getlist('selected_items')
         
         if not selected_ids:
             messages.warning(request, "No se seleccionaron bicicletas para eliminar.")
