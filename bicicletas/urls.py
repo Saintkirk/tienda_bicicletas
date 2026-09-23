@@ -8,10 +8,8 @@ urlpatterns = [
     path('editar/<int:pk>/', views.EditarBicicletaView.as_view(), name='editar_bicicleta'),
     path('eliminar/<int:pk>/', views.EliminarBicicletaView.as_view(), name='eliminar_bicicleta'),
     
-    # NUEVA RUTA: Eliminación múltiple
+    # Ruta de eliminación múltiple
     path('eliminar-multiple/', views.eliminar_multiple_bicicletas, name='eliminar_multiple_bicicletas'),
     
     path('api/modelos-por-marca/', views.obtener_modelos_por_marca, name='obtener_modelos_por_marca'),
-
-   
 ]

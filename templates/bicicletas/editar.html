@@ -1,1 +1,9 @@
 {% extends 'bicicletas/crear.html' %}
+
+{% block titulo_pagina %}
+    Editar Bicicleta: {{ object.modelo_rel }}
+{% endblock %}
+
+{% block texto_boton %}
+    Actualizar Bicicleta
+{% endblock %}

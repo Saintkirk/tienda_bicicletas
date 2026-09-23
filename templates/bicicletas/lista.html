@@ -3,351 +3,237 @@
 {% block title %}Catálogo de Bicicletas{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0 fw-bold text-dark">Catálogo de bicicletas</h1>
-    <a class="btn btn-primary fw-bold shadow-sm" href="{% url 'crear_bicicleta' %}">
-        <i class="bi bi-plus-circle"></i> Agregar bicicleta
-    </a>
-</div>
+<div class="container mt-4">
+    <!-- Encabezado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Catálogo de Bicicletas</h1>
+        <a href="{% url 'crear_bicicleta' %}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i> Nueva Bicicleta
+        </a>
+    </div>
 
-<!-- Mensajes Django -->
-{% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <!-- Filtros de Búsqueda -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" id="filter-form">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label for="categoria" class="form-label">Categoría</label>
+                        <select name="categoria" id="categoria" class="form-select">
+                            <option value="">Todas</option>
+                            {% for cat in categorias %}
+                                <option value="{{ cat.id }}" {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="marca" class="form-label">Marca</label>
+                        <select name="marca" id="marca" class="form-select">
+                            <option value="">Todas</option>
+                            {% for marca in marcas %}
+                                <option value="{{ marca.id }}" {% if request.GET.marca == marca.id|stringformat:"s" %}selected{% endif %}>{{ marca.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="modelo" class="form-label">Modelo</label>
+                        <select name="modelo" id="modelo" class="form-select">
+                            <option value="">Todas</option>
+                            {% for mod in modelos %}
+                                <option value="{{ mod.id }}" {% if request.GET.modelo == mod.id|stringformat:"s" %}selected{% endif %}>{{ mod.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="aro" class="form-label">Aro</label>
+                        <select name="aro" id="aro" class="form-select">
+                            <option value="">Todas</option>
+                            {% for aro_val in aros %}
+                                <option value="{{ aro_val }}" {% if request.GET.aro == aro_val|stringformat:"s" %}selected{% endif %}>{{ aro_val }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <button type="submit" class="btn btn-warning me-2"><i class="fas fa-filter me-1"></i> Filtrar</button>
+                        <a href="{% url 'lista_bicicletas' %}" class="btn btn-outline-secondary"><i class="fas fa-times me-1"></i> Limpiar</a>
+                    </div>
+                </div>
+            </form>
         </div>
-    {% endfor %}
-{% endif %}
+    </div>
 
-<!-- BARRA DE ACCIONES CONTEXTUAL (Solo visible si hay registros) -->
-{% if bicicletas %}
-<div class="card shadow-sm mb-3 border-start border-4 border-danger bg-light sticky-top" style="top: 10px; z-index: 1000;">
-    <div class="card-body py-2 d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-3">
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="selectTodos">
-                <label class="form-check-label fw-bold small" for="selectTodos">Seleccionar todo</label>
+    <!-- Resultados y Tabla -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h4 class="mb-3">Resultados: {{ bicicletas|length }} bicicletas</h4>
+
+            <!-- BARRA DE ACCIONES EN LOTE -->
+            <div id="bulk-action-bar" class="alert alert-secondary justify-content-between align-items-center mb-3 py-2 px-3 shadow-sm d-none">
+                <div class="d-flex align-items-center">
+                    <span class="fw-bold me-2 text-dark">
+                        <i class="fas fa-check-square text-primary me-1"></i> <span id="selected-count">0</span> bicicletas seleccionadas
+                    </span>
+                    <span class="text-muted small">para gestión masiva</span>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal">
+                        <i class="fas fa-trash-alt me-1"></i> Eliminar selección
+                    </button>
+                </div>
             </div>
-            <span class="text-muted small" id="contadorSeleccionados">(0 seleccionados)</span>
+
+            <!-- Formulario para enviar los IDs seleccionados al backend -->
+            <form id="bulk-delete-form" method="post" action="{% url 'eliminar_multiple_bicicletas' %}">
+                {% csrf_token %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" id="select-all" class="form-check-input">
+                                </th>
+                                <th>Marca</th>
+                                <th>Modelo</th>
+                                <th>Categoría</th>
+                                <th>Aro</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bici in bicicletas %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="selected_items" value="{{ bici.id }}" class="form-check-input item-checkbox">
+                                </td>
+                                <td>{{ bici.marca }}</td>
+                                <td>{{ bici.modelo_rel }}</td>
+                                <td>{{ bici.categoria_rel }}</td>
+                                <td>{{ bici.aro }}</td>
+                                <td>${{ bici.precio }}</td>
+                                <td>{{ bici.stock }}</td>
+                                <td class="text-end">
+                                    <!-- Botón Editar -->
+                                    <a href="{% url 'editar_bicicleta' bici.id %}" class="btn btn-sm btn-primary me-1" title="Editar bicicleta">
+                                        <i class="fas fa-edit"></i> <span class="d-none d-md-inline">Editar</span>
+                                    </a>
+
+                                    <!-- Botón Eliminar Individual -->
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ bici.id }}" title="Eliminar bicicleta">
+                                        <i class="fas fa-trash-alt"></i> <span class="d-none d-md-inline">Eliminar</span>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">No se encontraron bicicletas registradas.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
         </div>
-        
-        <!-- Formulario de Eliminación Múltiple -->
-        <form method="post" action="{% url 'eliminar_multiple_bicicletas' %}" id="formEliminacionMultiple">
-            {% csrf_token %}
-            <!-- Los inputs ocultos se generan con JS -->
-            <div id="contenedorIDs"></div>
-            
-            <button type="button" class="btn btn-danger btn-sm fw-bold" id="btnEliminarMultiple" disabled data-bs-toggle="modal" data-bs-target="#modalConfirmacion">
-                <i class="bi bi-trash"></i> Eliminar Seleccionados (<span id="countBtn">0</span>)
-            </button>
-        </form>
     </div>
 </div>
-{% endif %}
 
-<!-- Modal de Confirmación Personalizado -->
-<div class="modal fade" id="modalConfirmacion" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<!-- MODAL DE CONFIRMACIÓN MULTIPLE -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill"></i> Confirmar Eliminación</h5>
+                <h5 class="modal-title" id="confirmDeleteModalLabel"><i class="fas fa-exclamation-triangle me-2"></i> Confirmar Eliminación Múltiple</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Se van a eliminar <strong id="cantidadModal" class="fw-bold text-danger">0</strong> bicicletas.</p>
-                <p class="small text-muted mb-0">Esta acción no se puede deshacer.</p>
+                <p>¿Estás seguro de que deseas eliminar permanentemente las <strong id="modal-selected-count">0</strong> bicicletas seleccionadas?</p>
+                <p class="text-muted small mb-0">Esta acción no se puede deshacer y los registros se perderán del inventario.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" id="btnConfirmarEliminar">Sí, Eliminar</button>
+                <button type="button" id="confirm-delete-btn" class="btn btn-danger">Sí, eliminar</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Formulario de Filtros -->
-<form method="get" class="card card-body shadow-sm mb-4 bg-light border-0">
-    <div class="row g-3">
-        <div class="col-md-3">
-            <label class="form-label small text-muted fw-bold" for="filtro-categoria">Categoría</label>
-            <select class="form-select form-select-sm" id="filtro-categoria" name="categoria">
-                <option value="">Todas</option>
-                {% for categoria in categorias %}
-                    <option value="{{ categoria.id }}" {% if request.GET.categoria == categoria.id|stringformat:'s' %}selected{% endif %}>{{ categoria.nombre }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label small text-muted fw-bold" for="filtro-marca">Marca</label>
-            <select class="form-select form-select-sm" id="filtro-marca" name="marca">
-                <option value="">Todas</option>
-                {% for marca in marcas %}
-                    <option value="{{ marca.id }}" {% if request.GET.marca == marca.id|stringformat:'s' %}selected{% endif %}>{{ marca.nombre }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label small text-muted fw-bold" for="filtro-modelo">Modelo</label>
-            <select class="form-select form-select-sm" id="filtro-modelo" name="modelo">
-                <option value="">Todos</option>
-                {% for modelo in modelos %}
-                    <option value="{{ modelo.id }}" data-marca="{{ modelo.marca_id }}" {% if request.GET.modelo == modelo.id|stringformat:'s' %}selected{% endif %}>{{ modelo.nombre }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label small text-muted fw-bold" for="filtro-aro">Aro</label>
-            <select class="form-select form-select-sm" id="filtro-aro" name="aro">
-                <option value="">Todos</option>
-                {% for aro in aros %}
-                    <option value="{{ aro }}" {% if request.GET.aro == aro|stringformat:'s' %}selected{% endif %}>{{ aro }} pulgadas</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- NUEVO: Slider de Rango de Precios interconectado con Django -->
-        <div class="col-md-6">
-            <label class="form-label small text-muted fw-bold" for="customRange">
-                Rango de Precio: <span id="precioSeleccionado" class="text-primary fw-bold">$0 - $10.000.000 CLP</span>
-            </label>
-            <input type="range" class="form-range" min="0" max="10000000" step="100000" id="customRange" value="10000000">
-            
-            <!-- Campo select generado de forma segura por el formulario de Django (oculto en UI pero funcional para el GET) -->
-            <div class="d-none">
-                {{ form_filtro.rango_precio }}
+<!-- MODALES DE ELIMINACIÓN INDIVIDUAL -->
+{% for bici in bicicletas %}
+<div class="modal fade text-dark" id="deleteModal{{ bici.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ bici.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel{{ bici.id }}"><i class="fas fa-exclamation-triangle me-2"></i> Confirmar Eliminación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-start">
+                <p>¿Estás seguro de que deseas eliminar la bicicleta <strong>{{ bici.marca }} - {{ bici.modelo_rel }} (Aro {{ bici.aro }})</strong>?</p>
+                <p class="text-muted small mb-0">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{% url 'eliminar_bicicleta' bici.id %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                </form>
             </div>
         </div>
-
-        <div class="col-md-6 d-flex align-items-end">
-            <div class="form-check mb-2 ms-2">
-                <input class="form-check-input" type="checkbox" name="disponibles" value="1" id="checkDisponibles" {% if request.GET.disponibles %}checked{% endif %}>
-                <label class="form-check-label small text-muted fw-bold" for="checkDisponibles">Solo con stock</label>
-            </div>
-        </div>
-        <div class="col-12 d-flex gap-2 mt-3 pt-2 border-top">
-            <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold"><i class="bi bi-funnel"></i> Filtrar</button>
-            <a href="{% url 'lista_bicicletas' %}" class="btn btn-outline-secondary btn-sm px-4"><i class="bi bi-x-circle"></i> Limpiar</a>
-        </div>
     </div>
-</form>
-
-<!-- Tabla -->
-<div class="card shadow-sm border-0 overflow-hidden">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 text-muted fw-bold">Resultados: {{ page_obj.paginator.count }} bicicletas {% if paginator.num_pages > 1 %}(Página {{ page_obj.number }} de {{ paginator.num_pages }}){% endif %}</h5>
-    </div>
-    
-    <div class="card-body p-0">
-        {% if bicicletas %}
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-dark text-white">
-                    <tr>
-                        <!-- Checkbox Header -->
-                        <th scope="col" class="ps-4 text-center" style="width: 50px;">
-                            <input type="checkbox" class="form-check-input" id="headerCheckbox" style="cursor: pointer;" disabled>
-                        </th>
-                        <th scope="col" class="ps-3">Marca</th>
-                        <th scope="col">Modelo</th>
-                        <th scope="col">Categoría</th>
-                        <th scope="col">Aro</th>
-                        <th scope="col">Precio</th>
-                        <th scope="col" class="text-center">Stock</th>
-                        <th scope="col" class="text-end pe-4">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for bicicleta in bicicletas %}
-                    <tr class="align-middle {% if bicicleta.stock == 0 %}table-light text-muted{% endif %}" id="fila-{{ bicicleta.pk }}">
-                        <!-- Checkbox Fila -->
-                        <td class="text-center ps-4">
-                            <input type="checkbox" 
-                                   class="form-check-input item-checkbox" 
-                                   value="{{ bicicleta.pk }}"
-                                   style="cursor: pointer; width: 1.2em; height: 1.2em;">
-                        </td>
-                        <td class="ps-3 fw-bold text-dark">
-                            {% if bicicleta.modelo_rel and bicicleta.modelo_rel.marca %}{{ bicicleta.modelo_rel.marca.nombre }}
-                            {% else %}<span class="text-muted fst-italic">N/A</span>{% endif %}
-                        </td>
-                        <td>
-                            {% if bicicleta.modelo_rel %}{{ bicicleta.modelo_rel.nombre }}
-                            {% else %}<span class="text-muted fst-italic">Sin modelo</span>{% endif %}
-                            {% if bicicleta.es_oferta %}<span class="badge bg-danger ms-1"><i class="bi bi-tag"></i> Oferta</span>{% endif %}
-                        </td>
-                        <td>
-                            {% if bicicleta.categoria_rel %}<span class="badge bg-info text-dark">{{ bicicleta.categoria_rel.nombre }}</span>
-                            {% else %}<span class="badge bg-secondary">Sin categoría</span>{% endif %}
-                        </td>
-                        <td>{{ bicicleta.aro }}"</td>
-                        <td class="fw-bold text-success fs-6">${{ bicicleta.precio }}</td>
-                        <td class="text-center">
-                            {% if bicicleta.stock > 10 %}<span class="badge bg-success rounded-pill px-3">{{ bicicleta.stock }}</span>
-                            {% elif bicicleta.stock > 0 %}<span class="badge bg-warning text-dark rounded-pill px-3">{{ bicicleta.stock }}</span>
-                            {% else %}<span class="badge bg-danger rounded-pill px-3">Agotado</span>{% endif %}
-                        </td>
-                        <td class="text-end pe-4">
-                            <a class="btn btn-warning btn-sm text-white me-2 shadow-sm d-inline-flex align-items-center" href="{% url 'editar_bicicleta' bicicleta.pk %}" title="Editar">
-                                <i class="bi bi-pencil-square me-1"></i> Editar
-                            </a>
-                            <a class="btn btn-danger btn-sm shadow-sm d-inline-flex align-items-center" href="{% url 'eliminar_bicicleta' bicicleta.pk %}" title="Eliminar">
-                                <i class="bi bi-trash me-1"></i> Eliminar
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-inbox display-1 text-muted"></i>
-            <h3 class="mt-3 text-muted">No se encontraron bicicletas</h3>
-            <p class="text-muted">Intenta ajustar los filtros o agrega una nueva bicicleta.</p>
-            <a href="{% url 'crear_bicicleta' %}" class="btn btn-primary mt-2">Agregar bicicleta</a>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Paginación -->
-    {% if is_paginated %}
-    <div class="card-footer bg-white py-3 border-top-0">
-        <nav aria-label="Paginación">
-            <ul class="pagination justify-content-center mb-0 gap-1">
-                {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page=1{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.rango_precio %}&rango_precio={{ request.GET.rango_precio }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-double-left"></i></a></li>
-                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.previous_page_number }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.rango_precio %}&rango_precio={{ request.GET.rango_precio }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-left"></i> Anterior</a></li>
-                {% endif %}
-
-                {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                        <li class="page-item active"><span class="page-link border-0 shadow-sm fw-bold">{{ num }}</span></li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ num }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.rango_precio %}&rango_precio={{ request.GET.rango_precio }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}">{{ num }}</a></li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.next_page_number }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.rango_precio %}&rango_precio={{ request.GET.rango_precio }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}">Siguiente <i class="bi bi-chevron-right"></i></a></li>
-                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.rango_precio %}&rango_precio={{ request.GET.rango_precio }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-double-right"></i></a></li>
-                {% endif %}
-            </ul>
-        </nav>
-    </div>
-    {% endif %}
 </div>
+{% endfor %}
 
+<!-- SCRIPT DE CONTROL -->
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    // --- Sincronización del Slider con el Select de Django ---
-    const rangeInput = document.getElementById('customRange');
-    const precioLabel = document.getElementById('precioSeleccionado');
-    const selectDjango = document.getElementById('id_rango_precio');
-
-    if (rangeInput && selectDjango) {
-        rangeInput.addEventListener('input', function() {
-            const val = parseInt(this.value);
-            precioLabel.textContent = `$0 - $${val.toLocaleString('es-CL')} CLP`;
-
-            for (let option of selectDjango.options) {
-                if (!option.value) continue;
-                const partes = option.value.split('-');
-                const min = parseInt(partes[0]);
-                const max = parseInt(partes[1]);
-
-                if (val >= min && val <= max) {
-                    selectDjango.value = option.value;
-                    break;
-                }
-            }
-        });
-    }
-
-    // --- Lógica de Filtros (Marca / Modelo) ---
-    const marcaSelect = document.getElementById('filtro-marca');
-    const modeloSelect = document.getElementById('filtro-modelo');
-    
-    if (marcaSelect && modeloSelect) {
-        marcaSelect.addEventListener('change', function () {
-            const marcaId = this.value;
-            Array.from(modeloSelect.options).forEach(function (option) {
-                if (option.value === "") { option.hidden = false; } 
-                else { option.hidden = marcaId && option.dataset.marca !== marcaId; }
-            });
-            if (modeloSelect.value && modeloSelect.selectedOptions[0]?.dataset.marca !== marcaId) { modeloSelect.value = ''; }
-        });
-        marcaSelect.dispatchEvent(new Event('change'));
-    }
-
-    // --- Lógica de Selección Múltiple ---
-    const headerCheckbox = document.getElementById('headerCheckbox');
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('select-all');
     const itemCheckboxes = document.querySelectorAll('.item-checkbox');
-    const btnEliminarMultiple = document.getElementById('btnEliminarMultiple');
-    const countBtn = document.getElementById('countBtn');
-    const contadorTexto = document.getElementById('contadorSeleccionados');
-    const contenedorIDs = document.getElementById('contenedorIDs');
-    const cantidadModal = document.getElementById('cantidadModal');
-    const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
-    const formEliminacion = document.getElementById('formEliminacionMultiple');
+    const bulkActionBar = document.getElementById('bulk-action-bar');
+    const selectedCountSpan = document.getElementById('selected-count');
+    const modalSelectedCountSpan = document.getElementById('modal-selected-count');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const bulkDeleteForm = document.getElementById('bulk-delete-form');
 
-    if (itemCheckboxes.length > 0) {
-        headerCheckbox.disabled = false;
+    function updateBulkActionBar() {
+        const checkedItems = document.querySelectorAll('.item-checkbox:checked');
+        const count = checkedItems.length;
 
-        headerCheckbox.addEventListener('change', function() {
-            const isChecked = this.checked;
-            itemCheckboxes.forEach(cb => {
-                cb.checked = isChecked;
-                cb.dispatchEvent(new Event('change'));
-            });
-        });
+        selectedCountSpan.textContent = count;
+        modalSelectedCountSpan.textContent = count;
 
-        itemCheckboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                updateSelectionState();
-                
-                if (!this.checked) {
-                    headerCheckbox.checked = false;
-                } else {
-                    const allChecked = Array.from(itemCheckboxes).every(c => c.checked);
-                    headerCheckbox.checked = allChecked;
-                }
-            });
-        });
-
-        function updateSelectionState() {
-            const selectedCount = Array.from(itemCheckboxes).filter(cb => cb.checked).length;
-            
-            countBtn.textContent = selectedCount;
-            contadorTexto.textContent = `(${selectedCount} seleccionados)`;
-            cantidadModal.textContent = selectedCount;
-            
-            if (selectedCount > 0) {
-                btnEliminarMultiple.disabled = false;
-                btnEliminarMultiple.classList.remove('btn-secondary');
-                btnEliminarMultiple.classList.add('btn-danger');
-            } else {
-                btnEliminarMultiple.disabled = true;
-                btnEliminarMultiple.classList.add('btn-secondary');
-                btnEliminarMultiple.classList.remove('btn-danger');
-            }
-
-            contenedorIDs.innerHTML = '';
-            itemCheckboxes.forEach(cb => {
-                if (cb.checked) {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'bicicleta_ids';
-                    input.value = cb.value;
-                    contenedorIDs.appendChild(input);
-                }
-            });
+        if (count > 0) {
+            bulkActionBar.classList.remove('d-none');
+            bulkActionBar.classList.add('d-flex');
+        } else {
+            bulkActionBar.classList.remove('d-flex');
+            bulkActionBar.classList.add('d-none');
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
         }
     }
 
-    if (btnConfirmarEliminar) {
-        btnConfirmarEliminar.addEventListener('click', function() {
-            formEliminacion.submit();
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateBulkActionBar();
+        });
+    }
+
+    itemCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateBulkActionBar();
+            if (!this.checked && selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+            }
+        });
+    });
+
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', function() {
+            bulkDeleteForm.submit();
         });
     }
 });
