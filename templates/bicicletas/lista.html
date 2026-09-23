@@ -105,15 +105,21 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-4">
-             <label class="form-label small text-muted fw-bold" for="filtro-precio-min">Precio Mínimo</label>
-             <input type="number" class="form-control form-control-sm" id="filtro-precio-min" name="precio_min" value="{{ request.GET.precio_min }}" placeholder="$0">
+
+        <!-- NUEVO: Slider de Rango de Precios interconectado con Django -->
+        <div class="col-md-6">
+            <label class="form-label small text-muted fw-bold" for="customRange">
+                Rango de Precio: <span id="precioSeleccionado" class="text-primary fw-bold">$0 - $10.000.000 CLP</span>
+            </label>
+            <input type="range" class="form-range" min="0" max="10000000" step="100000" id="customRange" value="10000000">
+            
+            <!-- Campo select generado de forma segura por el formulario de Django (oculto en UI pero funcional para el GET) -->
+            <div class="d-none">
+                {{ form_filtro.rango_precio }}
+            </div>
         </div>
-        <div class="col-md-4">
-            <label class="form-label small text-muted fw-bold" for="filtro-precio-max">Precio Máximo</label>
-            <input type="number" class="form-control form-control-sm" id="filtro-precio-max" name="precio_max" value="{{ request.GET.precio_max }}" placeholder="Ilimitado">
-        </div>
-        <div class="col-md-4 d-flex align-items-end">
+
+        <div class="col-md-6 d-flex align-items-end">
             <div class="form-check mb-2 ms-2">
                 <input class="form-check-input" type="checkbox" name="disponibles" value="1" id="checkDisponibles" {% if request.GET.disponibles %}checked{% endif %}>
                 <label class="form-check-label small text-muted fw-bold" for="checkDisponibles">Solo con stock</label>
@@ -210,21 +216,21 @@
         <nav aria-label="Paginación">
             <ul class="pagination justify-content-center mb-0 gap-1">
                 {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page=1{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.precio_min %}&precio_min={{ request.GET.precio_min }}{% endif %}{% if request.GET.precio_max %}&precio_max={{ request.GET.precio_max }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-double-left"></i></a></li>
-                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.previous_page_number }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.precio_min %}&precio_min={{ request.GET.precio_min }}{% endif %}{% if request.GET.precio_max %}&precio_max={{ request.GET.precio_max }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-left"></i> Anterior</a></li>
+                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page=1{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.rango_precio %}&rango_precio={{ request.GET.rango_precio }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-double-left"></i></a></li>
+                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.previous_page_number }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.rango_precio %}&rango_precio={{ request.GET.rango_precio }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-left"></i> Anterior</a></li>
                 {% endif %}
 
                 {% for num in page_obj.paginator.page_range %}
                     {% if page_obj.number == num %}
                         <li class="page-item active"><span class="page-link border-0 shadow-sm fw-bold">{{ num }}</span></li>
                     {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ num }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.precio_min %}&precio_min={{ request.GET.precio_min }}{% endif %}{% if request.GET.precio_max %}&precio_max={{ request.GET.precio_max }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}">{{ num }}</a></li>
+                        <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ num }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.rango_precio %}&rango_precio={{ request.GET.rango_precio }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}">{{ num }}</a></li>
                     {% endif %}
                 {% endfor %}
 
                 {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.next_page_number }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.precio_min %}&precio_min={{ request.GET.precio_min }}{% endif %}{% if request.GET.precio_max %}&precio_max={{ request.GET.precio_max }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}">Siguiente <i class="bi bi-chevron-right"></i></a></li>
-                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.precio_min %}&precio_min={{ request.GET.precio_min }}{% endif %}{% if request.GET.precio_max %}&precio_max={{ request.GET.precio_max }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-double-right"></i></a></li>
+                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.next_page_number }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.rango_precio %}&rango_precio={{ request.GET.rango_precio }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}">Siguiente <i class="bi bi-chevron-right"></i></a></li>
+                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.rango_precio %}&rango_precio={{ request.GET.rango_precio }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-double-right"></i></a></li>
                 {% endif %}
             </ul>
         </nav>
@@ -234,7 +240,31 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // --- Lógica de Filtros ---
+    // --- Sincronización del Slider con el Select de Django ---
+    const rangeInput = document.getElementById('customRange');
+    const precioLabel = document.getElementById('precioSeleccionado');
+    const selectDjango = document.getElementById('id_rango_precio');
+
+    if (rangeInput && selectDjango) {
+        rangeInput.addEventListener('input', function() {
+            const val = parseInt(this.value);
+            precioLabel.textContent = `$0 - $${val.toLocaleString('es-CL')} CLP`;
+
+            for (let option of selectDjango.options) {
+                if (!option.value) continue;
+                const partes = option.value.split('-');
+                const min = parseInt(partes[0]);
+                const max = parseInt(partes[1]);
+
+                if (val >= min && val <= max) {
+                    selectDjango.value = option.value;
+                    break;
+                }
+            }
+        });
+    }
+
+    // --- Lógica de Filtros (Marca / Modelo) ---
     const marcaSelect = document.getElementById('filtro-marca');
     const modeloSelect = document.getElementById('filtro-modelo');
     
@@ -264,25 +294,21 @@ document.addEventListener('DOMContentLoaded', function () {
     if (itemCheckboxes.length > 0) {
         headerCheckbox.disabled = false;
 
-        // Evento "Seleccionar Todo"
         headerCheckbox.addEventListener('change', function() {
             const isChecked = this.checked;
             itemCheckboxes.forEach(cb => {
                 cb.checked = isChecked;
-                cb.dispatchEvent(new Event('change')); // Disparar evento individual para actualizar UI
+                cb.dispatchEvent(new Event('change'));
             });
         });
 
-        // Evento Change en cada item
         itemCheckboxes.forEach(cb => {
             cb.addEventListener('change', function() {
                 updateSelectionState();
                 
-                // Si desmarcan uno manualmente, desmarcar header
                 if (!this.checked) {
                     headerCheckbox.checked = false;
                 } else {
-                    // Si todos están marcados, marcar header
                     const allChecked = Array.from(itemCheckboxes).every(c => c.checked);
                     headerCheckbox.checked = allChecked;
                 }
@@ -292,12 +318,10 @@ document.addEventListener('DOMContentLoaded', function () {
         function updateSelectionState() {
             const selectedCount = Array.from(itemCheckboxes).filter(cb => cb.checked).length;
             
-            // Actualizar textos
             countBtn.textContent = selectedCount;
             contadorTexto.textContent = `(${selectedCount} seleccionados)`;
             cantidadModal.textContent = selectedCount;
             
-            // Activar/Desactivar botón
             if (selectedCount > 0) {
                 btnEliminarMultiple.disabled = false;
                 btnEliminarMultiple.classList.remove('btn-secondary');
@@ -308,13 +332,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 btnEliminarMultiple.classList.remove('btn-danger');
             }
 
-            // Generar inputs ocultos para el formulario
             contenedorIDs.innerHTML = '';
             itemCheckboxes.forEach(cb => {
                 if (cb.checked) {
                     const input = document.createElement('input');
                     input.type = 'hidden';
-                    input.name = 'bicicleta_ids'; // DEBE COINCIDIR CON VIEWS.PY
+                    input.name = 'bicicleta_ids';
                     input.value = cb.value;
                     contenedorIDs.appendChild(input);
                 }
@@ -322,10 +345,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // --- Manejo del Modal y Envío ---
     if (btnConfirmarEliminar) {
         btnConfirmarEliminar.addEventListener('click', function() {
-            // Enviar el formulario real
             formEliminacion.submit();
         });
     }
