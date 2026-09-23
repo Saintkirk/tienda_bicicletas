@@ -3,20 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tienda de Bicicletas</title>
-    <!-- Bootstrap CSS -->
+    <title>{% block title %}Gestión de Bicicletas | Veloce{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-body: #090d16;      /* Fondo general más profundo */
+            --bg-card: #151f32;      /* Tarjetas con mejor contraste */
+            --text-main: #ffffff;    /* Blanco puro para máxima lectura */
+            --text-muted: #cbd5e1;   /* Gris claro mejorado */
+            --accent-gold: #f3d06c;   /* Dorado más brillante y visible */
+            --accent-gold-hover: #d4af37;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            
+            --font-heading: 'Playfair Display', serif;
+            --font-body: 'Inter', sans-serif;
+            
+            --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.7);
+            --border-radius: 12px;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1, h2, h3, h4, h5, h6, .navbar-brand {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        a { text-decoration: none; transition: all 0.3s ease; }
+        a:hover { color: var(--accent-gold); }
+
+        /* Navbar */
+        .navbar {
+            background-color: rgba(9, 13, 22, 0.95) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 0;
+        }
+        .navbar-brand {
+            font-size: 1.5rem;
+            color: var(--accent-gold) !important;
+        }
+        .nav-link {
+            color: var(--text-muted) !important;
+            font-weight: 500;
+            margin: 0 0.5rem;
+            position: relative;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-main) !important;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background-color: var(--accent-gold);
+            transition: width 0.3s;
+        }
+        .nav-link:hover::after { width: 100%; }
+
+        /* Botones */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-hover));
+            border: none;
+            color: #0f172a;
+            font-weight: 600;
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(243, 208, 108, 0.2);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, var(--accent-gold-hover), var(--accent-gold));
+            color: #000;
+        }
+
+        /* Tarjetas */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-soft);
+            margin-bottom: 2rem;
+        }
+        .card-header {
+            background-color: rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            color: var(--accent-gold);
+        }
+        .card-body { padding: 2rem; }
+
+        /* Formularios con contraste mejorado */
+        .form-control, .form-select {
+            background-color: #1e293b !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: var(--text-main) !important;
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+        }
+        .form-control::placeholder {
+            color: #94a3b8;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #1e293b !important;
+            border-color: var(--accent-gold) !important;
+            color: var(--text-main) !important;
+            box-shadow: 0 0 0 0.25rem rgba(243, 208, 108, 0.25) !important;
+        }
+        .form-label {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .form-text {
+            color: #94a3b8 !important; 
+            font-size: 0.85rem;
+        }
+
+        /* Tablas */
+        .table {
+            color: var(--text-main);
+            margin-bottom: 0;
+        }
+        .table thead th {
+            background-color: rgba(0,0,0,0.3);
+            color: var(--accent-gold);
+            font-family: var(--font-heading);
+            font-weight: 600;
+            border-bottom: 2px solid var(--accent-gold);
+            padding: 1rem;
+        }
+        .table tbody td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(255,255,255,0.05);
+            color: var(--text-main);
+        }
+
+        /* Footer */
+        footer {
+            margin-top: auto;
+            background-color: rgba(0,0,0,0.3);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 2rem 0;
+            color: var(--text-muted);
+        }
+
+        .text-gold { color: var(--accent-gold) !important; }
+        
+        .alert {
+            border: none;
+            border-radius: 8px;
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            border-left: 4px solid var(--accent-gold);
+        }
+        .btn-close-white { filter: invert(1); }
+    </style>
+
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Tu barra de navegación u otros elementos comunes -->
-    
-    <main class="container my-4">
-        {% block content %}
-        <!-- Aquí se inyectará el contenido de las otras vistas como inicio.html -->
-        {% endblock %}
+
+    <!-- Navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'lista_bicicletas' %}">
+                <i class="bi bi-bicycle"></i> VELOCE <span style="font-size:0.8em; font-weight:300; color:var(--text-main)"></span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link" href="{% url 'lista_bicicletas' %}">Catálogo</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
     </main>
 
-    <!-- Bootstrap JS -->
+    <!-- Footer -->
+    <footer class="text-center">
+        <div class="container">
+            <p class="mb-1">&copy; 2026 Veloce Premium Bikes. Todos los derechos reservados.</p>
+            <small class="text-muted">Sistema de Gestión CRUD</small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

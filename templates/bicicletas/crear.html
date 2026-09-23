@@ -1,102 +1,326 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}
+    {% if form.instance.pk %}Editar Bicicleta{% else %}Nueva Bicicleta{% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">{% if form.instance.pk %}Editar Bicicleta{% else %}Registrar Nueva Bicicleta{% endif %}</h4>
-                </div>
-                <div class="card-body">
-                    <form method="post" novalidate>
-                        {% csrf_token %}
-                        
-                        <!-- Errores generales del formulario -->
-                        {% if form.non_field_errors %}
-                            <div class="alert alert-danger">
-                                {{ form.non_field_errors }}
-                            </div>
+    <h1 class="mb-4">
+        {% if form.instance.pk %}
+            Editar Bicicleta: {{ form.instance.modelo_rel }}
+        {% else %}
+            Registrar Nueva Bicicleta
+        {% endif %}
+    </h1>
+    
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <!-- Fila 1: Marca y Modelo -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.marca.id_for_label }}" class="form-label">{{ form.marca.label }}</label>
+                        {{ form.marca }}
+                        {% if form.marca.errors %}
+                            <div class="text-danger small">{{ form.marca.errors }}</div>
                         {% endif %}
-
-                        {% for field in form %}
-                            {% if field.name != 'es_destacada' and field.name != 'es_oferta' %}
-                                <div class="mb-3">
-                                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                    {{ field }}
-                                    {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-                                    {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-
-                        <div class="row">
-                            {% for field in form %}
-                                {% if field.name == 'es_destacada' or field.name == 'es_oferta' %}
-                                    <div class="col-md-6 mb-3">
-                                        <div class="form-check">
-                                            {{ field }}
-                                            <label for="{{ field.id_for_label }}" class="form-check-label">{{ field.label }}</label>
-                                        </div>
-                                        {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'lista_bicicletas' %}" class="btn btn-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-success">Guardar Bicicleta</button>
-                        </div>
-                    </form>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.modelo_rel.id_for_label }}" class="form-label">{{ form.modelo_rel.label }}</label>
+                        {{ form.modelo_rel }}
+                        {% if form.modelo_rel.errors %}
+                            <div class="text-danger small">{{ form.modelo_rel.errors }}</div>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
+
+                <!-- Fila 2: Categoría y Aro (Autocompletados) -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.categoria_rel.id_for_label }}" class="form-label">{{ form.categoria_rel.label }}</label>
+                        {{ form.categoria_rel }}
+                        <div class="form-text">{{ form.categoria_rel.help_text }}</div>
+                        {% if form.categoria_rel.errors %}
+                            <div class="text-danger small">{{ form.categoria_rel.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.aro.id_for_label }}" class="form-label">{{ form.aro.label }}</label>
+                        {{ form.aro }}
+                        {% if form.aro.errors %}
+                            <div class="text-danger small">{{ form.aro.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fila 3: Precios -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.precio.id_for_label }}" class="form-label">{{ form.precio.label }}</label>
+                        {{ form.precio }}
+                        <div class="form-text">{{ form.precio.help_text }}</div>
+                        {% if form.precio.errors %}
+                            <div class="text-danger small">{{ form.precio.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.precio_oferta.id_for_label }}" class="form-label">{{ form.precio_oferta.label }}</label>
+                        {{ form.precio_oferta }}
+                        <div class="form-text">{{ form.precio_oferta.help_text }}</div>
+                        {% if form.precio_oferta.errors %}
+                            <div class="text-danger small">{{ form.precio_oferta.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fila 4: Stock -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.stock.id_for_label }}" class="form-label">{{ form.stock.label }}</label>
+                        {{ form.stock }}
+                        {% if form.stock.errors %}
+                            <div class="text-danger small">{{ form.stock.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.stock_minimo.id_for_label }}" class="form-label">{{ form.stock_minimo.label }}</label>
+                        {{ form.stock_minimo }}
+                        {% if form.stock_minimo.errors %}
+                            <div class="text-danger small">{{ form.stock_minimo.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Fila 5: Color y Estado -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.color.id_for_label }}" class="form-label">{{ form.color.label }} <span class="text-danger">*</span></label>
+                        {{ form.color }}
+                        {% if form.color.errors %}
+                            <div class="text-danger small">{{ form.color.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.estado.id_for_label }}" class="form-label">{{ form.estado.label }}</label>
+                        {{ form.estado }}
+                        {% if form.estado.errors %}
+                            <div class="text-danger small">{{ form.estado.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Descripción y Especificaciones -->
+                <div class="mb-3">
+                    <label for="{{ form.descripcion.id_for_label }}" class="form-label">{{ form.descripcion.label }}</label>
+                    {{ form.descripcion }}
+                    {% if form.descripcion.errors %}
+                        <div class="text-danger small">{{ form.descripcion.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.especificaciones.id_for_label }}" class="form-label">{{ form.especificaciones.label }}</label>
+                    {{ form.especificaciones }}
+                    {% if form.especificaciones.errors %}
+                        <div class="text-danger small">{{ form.especificaciones.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Sección de Visibilidad y Marketing (Rediseñada) -->
+                <div class="card bg-dark text-light border-secondary p-3 mb-4 shadow-sm">
+                    <h5 class="card-title mb-3 fs-6 text-uppercase text-secondary fw-bold">
+                        <i class="fas fa-bullhorn me-2 text-warning"></i> Visibilidad y Marketing
+                    </h5>
+                    
+                    <div class="row">
+                        <!-- Destacar producto -->
+                        <div class="col-md-6 mb-2">
+                            <div class="form-check form-switch ps-5">
+                                <input class="form-check-input fs-5" type="checkbox" role="switch" id="{{ form.es_destacada.id_for_label }}" name="{{ form.es_destacada.html_name }}" {% if form.es_destacada.value %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold text-white" for="{{ form.es_destacada.id_for_label }}">
+                                    <i class="fas fa-star text-warning me-1"></i> Destacar producto
+                                </label>
+                            </div>
+                            <small class="text-muted d-block ms-5 ps-1">Aparecerá en la sección principal del inicio y catálogo.</small>
+                            {% if form.es_destacada.errors %}
+                                <div class="text-danger small ms-5">{{ form.es_destacada.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Marcar como oferta -->
+                        <div class="col-md-6 mb-2">
+                            <div class="form-check form-switch ps-5">
+                                <input class="form-check-input fs-5" type="checkbox" role="switch" id="{{ form.es_oferta.id_for_label }}" name="{{ form.es_oferta.html_name }}" {% if form.es_oferta.value %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold text-white" for="{{ form.es_oferta.id_for_label }}">
+                                    <i class="fas fa-tags text-success me-1"></i> Marcar como oferta
+                                </label>
+                            </div>
+                            <small class="text-muted d-block ms-5 ps-1">Se mostrará en la sección de rebajas especiales.</small>
+                            {% if form.es_oferta.errors %}
+                                <div class="text-danger small ms-5">{{ form.es_oferta.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'lista_bicicletas' %}" class="btn btn-secondary me-md-2">Cancelar</a>
+                    <button type="submit" class="btn btn-success">
+                        {% if form.instance.pk %}Actualizar Bicicleta{% else %}Guardar Bicicleta{% endif %}
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const marcaSelect = document.getElementById('id_marca');
-        const modeloSelect = document.getElementById('id_modelo_rel');
-        if (!marcaSelect || !modeloSelect) return;
-        const modelosDisponibles = Array.from(modeloSelect.options)
-            .filter(function (option) { return option.value; })
-            .map(function (option) { return option.cloneNode(true); });
-        const categoriaSelect = document.getElementById('id_categoria_rel');
+document.addEventListener('DOMContentLoaded', function() {
+    const marcaSelect = document.getElementById('id_marca');
+    const modeloSelect = document.getElementById('id_modelo_rel');
+    const categoriaSelect = document.getElementById('id_categoria_rel');
+    const aroSelect = document.getElementById('id_aro');
+    
+    const initialModeloId = "{{ form.instance.modelo_rel_id|default:'' }}";
+    const allAroOptions = Array.from(aroSelect.options);
 
-        function sincronizarCategoria() {
-            if (!categoriaSelect || !modeloSelect.value) return;
-            const modelo = modelosDisponibles.find(function (option) {
-                return option.value === modeloSelect.value;
-            });
-            if (modelo && modelo.dataset.categoria) {
-                categoriaSelect.value = modelo.dataset.categoria;
-            }
+    function resetDependentFields() {
+        modeloSelect.innerHTML = '<option value="">Seleccione primero una marca</option>';
+        modeloSelect.disabled = true;
+        modeloSelect.value = '';
+
+        categoriaSelect.innerHTML = '<option value="">Seleccione un modelo</option>';
+        categoriaSelect.disabled = true;
+        categoriaSelect.value = '';
+
+        aroSelect.innerHTML = '<option value="">Seleccione un modelo</option>';
+        aroSelect.disabled = true;
+        aroSelect.value = '';
+    }
+
+    function cargarModelos(marcaId, mantenerModeloInicial = false) {
+        if (!marcaId) {
+            resetDependentFields();
+            return;
         }
 
-        function filtrarModelos() {
-            const seleccion = modeloSelect.value;
-            const opciones = modelosDisponibles.filter(function (option) {
-                return option.value && option.dataset.marca === marcaSelect.value;
-            }).map(function (option) { return option.cloneNode(true); });
-            modeloSelect.replaceChildren(new Option('Seleccione un modelo', ''));
-            opciones.forEach(function (option) {
-                modeloSelect.appendChild(option);
-            });
-            modeloSelect.value = opciones.some(function (option) {
-                return option.value === seleccion;
-            }) ? seleccion : '';
-            modeloSelect.disabled = !marcaSelect.value;
-            sincronizarCategoria();
-        }
+        const modeloActual = mantenerModeloInicial ? initialModeloId : modeloSelect.value;
 
-        marcaSelect.addEventListener('change', function () {
-            modeloSelect.value = '';
-            filtrarModelos();
+        modeloSelect.innerHTML = '<option value="">Cargando modelos...</option>';
+        
+        fetch(`/bicicletas/api/modelos-por-marca/?marca_id=${marcaId}`)
+            .then(response => response.json())
+            .then(data => {
+                modeloSelect.innerHTML = '<option value="">Seleccione un modelo</option>';
+                
+                if (data.modelos && data.modelos.length > 0) {
+                    data.modelos.forEach(mod => {
+                        const option = document.createElement('option');
+                        option.value = mod.id;
+                        option.textContent = mod.nombre;
+                        
+                        if (mod.categoria_id) {
+                            option.setAttribute('data-categoria-id', mod.categoria_id);
+                            option.setAttribute('data-categoria-nombre', mod.categoria_nombre);
+                        }
+                        if (mod.aros_sugeridos && mod.aros_sugeridos.length > 0) {
+                            option.setAttribute('data-aros', JSON.stringify(mod.aros_sugeridos));
+                        }
+                        
+                        modeloSelect.appendChild(option);
+                    });
+                    modeloSelect.disabled = false;
+
+                    if (mantenerModeloInicial && modeloActual) {
+                        modeloSelect.value = modeloActual;
+                        modeloSelect.dispatchEvent(new Event('change'));
+                    }
+                } else {
+                    modeloSelect.innerHTML = '<option value="">No hay modelos para esta marca</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar modelos:', error);
+                modeloSelect.innerHTML = '<option value="">Error al cargar</option>';
+            });
+    }
+
+    if (marcaSelect) {
+        marcaSelect.addEventListener('change', function() {
+            resetDependentFields();
+            cargarModelos(this.value, false);
         });
-        modeloSelect.addEventListener('change', sincronizarCategoria);
-        filtrarModelos();
-    });
+    }
+
+    if (modeloSelect) {
+        modeloSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (!selectedOption || !selectedOption.value) return;
+
+            const catId = selectedOption.getAttribute('data-categoria-id');
+            const catNombre = selectedOption.getAttribute('data-categoria-nombre');
+            const arosJson = selectedOption.getAttribute('data-aros');
+
+            if (catId) {
+                let catOption = Array.from(categoriaSelect.options).find(opt => opt.value === catId);
+                
+                if (!catOption) {
+                    catOption = document.createElement('option');
+                    catOption.value = catId;
+                    catOption.textContent = catNombre || 'Categoría Asignada';
+                    categoriaSelect.add(catOption);
+                }
+                
+                categoriaSelect.value = catId;
+                categoriaSelect.disabled = false;
+            } else {
+                categoriaSelect.value = '';
+                categoriaSelect.disabled = true;
+                categoriaSelect.innerHTML = '<option value="">Sin categoría definida</option>';
+            }
+
+            const aroActual = aroSelect.value; 
+            aroSelect.innerHTML = ''; 
+            
+            if (arosJson) {
+                const arosPermitidos = JSON.parse(arosJson);
+                if (arosPermitidos.length > 0) {
+                    arosPermitidos.forEach(aro => {
+                        const opt = document.createElement('option');
+                        opt.value = aro;
+                        opt.textContent = 'Aro ' + aro;
+                        aroSelect.appendChild(opt);
+                    });
+                    aroSelect.disabled = false;
+                    
+                    if (aroActual && arosPermitidos.includes(parseInt(aroActual))) {
+                        aroSelect.value = aroActual;
+                    } else if (arosPermitidos.length === 1) {
+                        aroSelect.value = arosPermitidos[0];
+                    }
+                } else {
+                    allAroOptions.forEach(opt => {
+                        if (opt.value !== "") aroSelect.appendChild(opt.cloneNode(true));
+                    });
+                    aroSelect.disabled = false;
+                    if (aroActual) aroSelect.value = aroActual;
+                }
+            } else {
+                allAroOptions.forEach(opt => {
+                    if (opt.value !== "") aroSelect.appendChild(opt.cloneNode(true));
+                });
+                aroSelect.disabled = false;
+                if (aroActual) aroSelect.value = aroActual;
+            }
+        });
+    }
+    
+    if (marcaSelect && marcaSelect.value) {
+        cargarModelos(marcaSelect.value, true);
+    }
+});
 </script>
 {% endblock %}
