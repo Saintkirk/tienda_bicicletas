@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+import json
 
 from .forms import BicicletaForm
 from .models import Bicicleta
@@ -27,11 +28,17 @@ def crear_bicicleta(request):
     if request.method == "POST":
         form = BicicletaForm(request.POST)
         if form.is_valid():
-            form.save()
+            # El campo 'categoria' es virtual, no se guarda en el modelo
+            # Solo guardamos los datos reales del modelo
+            bicicleta = form.save(commit=False)
+            bicicleta.save()
             messages.success(request, "La bicicleta fue creada correctamente.")
             return redirect("lista_bicicletas")
     else:
         form = BicicletaForm()
+    
+    # Pasar las opciones de marcas por categoría al template para JavaScript
+    form.marcas_por_categoria_json_str = json.dumps(form.marcas_por_categoria_json)
 
     return render(
         request,

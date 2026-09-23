@@ -75,16 +75,8 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'tienda_bicicletas_db',  # El nombre de la base de datos que creaste en phpMyAdmin
-        'USER': 'root',                # Usuario por defecto de XAMPP
-        'PASSWORD': '',                # Por defecto en XAMPP la contraseña está vacía
-        'HOST': '127.0.0.1',           # O 'localhost'
-        'PORT': '3306',                # Puerto por defecto de MySQL en XAMPP
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 

@@ -1,0 +1,41 @@
+```
+# Database
+db.sqlite3
+
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.venv-local/
+.ENV
+.ENV.local
+env.bak/
+venv.bak/
+.env.bak
+
+# Django
+*.log
+local_settings.py
+db.sqlite3-journal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+```

@@ -8,10 +8,128 @@
     <div class="card-body">
         <form method="post">
             {% csrf_token %}
-            {{ form.as_p }}
+            
+            <!-- Campo Categoría -->
+            <div class="mb-3">
+                <label for="{{ form.categoria.id_for_label }}" class="form-label">{{ form.categoria.label }}</label>
+                {{ form.categoria }}
+                {% if form.categoria.errors %}
+                    <div class="text-danger">{{ form.categoria.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- Campo Marca -->
+            <div class="mb-3">
+                <label for="{{ form.marca.id_for_label }}" class="form-label">{{ form.marca.label }}</label>
+                {{ form.marca }}
+                {% if form.marca.errors %}
+                    <div class="text-danger">{{ form.marca.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- Campo Modelo -->
+            <div class="mb-3">
+                <label for="{{ form.modelo.id_for_label }}" class="form-label">{{ form.modelo.label }}</label>
+                {{ form.modelo }}
+                {% if form.modelo.errors %}
+                    <div class="text-danger">{{ form.modelo.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- Campo Tipo -->
+            <div class="mb-3">
+                <label for="{{ form.tipo.id_for_label }}" class="form-label">{{ form.tipo.label }}</label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}
+                    <div class="text-danger">{{ form.tipo.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- Campo Aro -->
+            <div class="mb-3">
+                <label for="{{ form.aro.id_for_label }}" class="form-label">{{ form.aro.label }}</label>
+                {{ form.aro }}
+                {% if form.aro.errors %}
+                    <div class="text-danger">{{ form.aro.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- Campo Precio -->
+            <div class="mb-3">
+                <label for="{{ form.precio.id_for_label }}" class="form-label">{{ form.precio.label }}</label>
+                {{ form.precio }}
+                {% if form.precio.errors %}
+                    <div class="text-danger">{{ form.precio.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- Campo Stock -->
+            <div class="mb-3">
+                <label for="{{ form.stock.id_for_label }}" class="form-label">{{ form.stock.label }}</label>
+                {{ form.stock }}
+                {% if form.stock.errors %}
+                    <div class="text-danger">{{ form.stock.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- Campo Color -->
+            <div class="mb-3">
+                <label for="{{ form.color.id_for_label }}" class="form-label">{{ form.color.label }}</label>
+                {{ form.color }}
+                {% if form.color.errors %}
+                    <div class="text-danger">{{ form.color.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <!-- Campo Descripción -->
+            <div class="mb-3">
+                <label for="{{ form.descripcion.id_for_label }}" class="form-label">{{ form.descripcion.label }}</label>
+                {{ form.descripcion }}
+                {% if form.descripcion.errors %}
+                    <div class="text-danger">{{ form.descripcion.errors }}</div>
+                {% endif %}
+            </div>
+            
             <button class="btn btn-success" type="submit">Guardar bicicleta</button>
             <a class="btn btn-secondary" href="{% url 'lista_bicicletas' %}">Cancelar</a>
         </form>
     </div>
 </div>
+
+<script>
+    // Datos de marcas por categoría (inyectados desde Django)
+    const marcasPorCategoria = {{ form.marcas_por_categoria_json_str|safe }};
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const categoriaSelect = document.getElementById('id_categoria');
+        const marcaSelect = document.getElementById('id_marca');
+        
+        // Función para actualizar las opciones de marca según la categoría seleccionada
+        function actualizarMarcas() {
+            const categoriaSeleccionada = categoriaSelect.value;
+            
+            // Limpiar opciones actuales de marca
+            marcaSelect.innerHTML = '<option value="">Seleccione una marca</option>';
+            
+            if (categoriaSeleccionada && marcasPorCategoria[categoriaSeleccionada]) {
+                const marcas = marcasPorCategoria[categoriaSeleccionada];
+                marcas.forEach(function(marca) {
+                    const option = document.createElement('option');
+                    option.value = marca.value;
+                    option.textContent = marca.label;
+                    marcaSelect.appendChild(option);
+                });
+                marcaSelect.disabled = false;
+            } else {
+                marcaSelect.disabled = true;
+            }
+        }
+        
+        // Escuchar cambios en la categoría
+        categoriaSelect.addEventListener('change', actualizarMarcas);
+        
+        // Inicializar estado
+        actualizarMarcas();
+    });
+</script>
 {% endblock %}
