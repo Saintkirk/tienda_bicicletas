@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Categoria, Marca, Modelo, Bicicleta, Cliente, Venta, ItemVenta, CarritoItem
+from .models import Categoria, Marca, Modelo, Bicicleta
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
@@ -22,19 +22,7 @@ class BicicletaAdmin(admin.ModelAdmin):
     search_fields = ('modelo_rel__nombre', 'modelo_rel__marca__nombre', 'descripcion')
     list_editable = ('precio', 'stock', 'estado', 'es_oferta')
 
-@admin.register(Cliente)
-class ClienteAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'apellido', 'email', 'telefono', 'ciudad')
-    search_fields = ('nombre', 'apellido', 'email')
 
-class ItemVentaInline(admin.TabularInline):
-    model = ItemVenta
-    extra = 0
 
-@admin.register(Venta)
-class VentaAdmin(admin.ModelAdmin):
-    list_display = ('id', 'cliente', 'fecha_venta', 'total', 'metodo_pago')
-    list_filter = ('metodo_pago', 'fecha_venta')
-    inlines = [ItemVentaInline]
 
-admin.site.register(CarritoItem)
+
