@@ -10,7 +10,41 @@ sys.path.append(current_path)
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from bicicletas.models import Marca, Modelo
+from bicicletas.models import Categoria, Marca, Modelo
+
+categorias = {
+    "Montaña": "Bicicletas para senderos y terrenos irregulares.",
+    "Ruta": "Bicicletas livianas para pavimento y carretera.",
+    "Urbana": "Bicicletas para transporte y movilidad urbana.",
+    "Eléctrica": "Bicicletas con asistencia eléctrica.",
+    "Infantil": "Bicicletas para niños y niñas.",
+}
+
+for nombre, descripcion in categorias.items():
+    Categoria.objects.get_or_create(
+        nombre=nombre,
+        defaults={"descripcion": descripcion, "activa": True},
+    )
+
+
+def categoria_para_modelo(nombre_marca, nombre_modelo):
+    nombre = f"{nombre_marca} {nombre_modelo}".lower()
+    if any(palabra in nombre for palabra in ("kid", "junior", "infantil", "balance")):
+        return "Infantil"
+    if any(palabra in nombre for palabra in ("electric", "e-bike", "e-", "turbo", "gain")):
+        return "Eléctrica"
+    if any(
+        palabra in nombre
+        for palabra in (
+            "domane", "checkpoint", "emonda", "via nirone", "sprint", "allez",
+            "roubaix", "tarmac", "defy", "contend", "propel", "addict", "speedster",
+            "synapse", "caad", "topstone", "jari", "absolute", "rova",
+        )
+    ):
+        return "Ruta"
+    if any(palabra in nombre for palabra in ("city", "urban", "riverside", "tilt", "dew", "fairfax", "kentfield", "traffic", "brisa")):
+        return "Urbana"
+    return "Montaña"
 
 # Catálogo estructurado con marcas y sus modelos (con aros enteros)
 catalogo_con_aros = {
@@ -73,6 +107,64 @@ catalogo_con_aros = {
     ]
 }
 
+catalogo_con_aros.update({
+    "Merida": [
+        ("Big Nine 20", 29), ("Big Nine 40", 29), ("Big Trail 400", 29),
+        ("Scultura 200", 28), ("Reacto 4000", 28),
+    ],
+    "Orbea": [
+        ("Alma H30", 29), ("Occam H30", 29), ("Oiz H30", 29),
+        ("Avant H40", 28), ("Gain D30", 28),
+    ],
+    "Cube": [
+        ("Aim Pro", 29), ("Reaction Pro", 29), ("Attention", 29),
+        ("Agree C:62", 28), ("Kathmandu Hybrid", 28),
+    ],
+    "Kona": [
+        ("Lana'i", 27), ("Mahuna", 29), ("Honzo", 29),
+        ("Dew Plus", 28), ("Rove", 28),
+    ],
+    "Santa Cruz": [
+        ("Chameleon", 29), ("Hightower", 29), ("Tallboy", 29),
+        ("Bronson", 29), ("Blur", 29),
+    ],
+    "GT": [
+        ("Avalanche Sport", 29), ("Aggressor Sport", 27), ("Sensor", 29),
+        ("Grade Sport", 28), ("Traffic", 28),
+    ],
+    "Marin": [
+        ("Bobcat Trail", 29), ("San Quentin", 29), ("Alpine Trail", 29),
+        ("Fairfax", 28), ("Kentfield", 28),
+    ],
+    "Fuji": [
+        ("Nevada", 29), ("Jari", 28), ("Roubaix", 28),
+        ("Absolute", 28), ("E-Nevada", 29),
+    ],
+    "Lahsen": [
+        ("Mountain Pro", 29), ("Montana", 27), ("City", 28),
+        ("E-Bike Urban", 28), ("Junior", 24),
+    ],
+    "Venzo": [
+        ("Raptor", 29), ("Skyline", 29), ("Primal", 27),
+        ("Flex", 28), ("Eolo", 28),
+    ],
+    "Lifecycles": [
+        ("MTB 300", 29), ("MTB 500", 29), ("City 100", 28),
+        ("City 300", 28), ("Kids 20", 20),
+    ],
+    "Best": [
+        ("Raptor 29", 29), ("Explorer", 27), ("Urban", 28),
+        ("E-City", 28), ("Junior 20", 20),
+    ],
+    "Brompton": [
+        ("C Line Explore", 16), ("C Line Urban", 16), ("P Line", 16),
+        ("Electric C Line", 16),
+    ],
+    "Cannondale Kids": [
+        ("Trail Balance", 12), ("Quick 20", 20), ("Kids Trail 24", 24),
+    ],
+})
+
 # Poblar las tablas Marca y Modelo
 for nombre_marca, lista_datos in catalogo_con_aros.items():
     segmento = "MASIVA"
@@ -88,9 +180,13 @@ for nombre_marca, lista_datos in catalogo_con_aros.items():
     
     for nombre_modelo, aro in lista_datos:
         nombre_con_aro = f"{nombre_modelo} (Aro {aro})"
-        Modelo.objects.get_or_create(
+        modelo_obj, _ = Modelo.objects.get_or_create(
             marca=marca_obj, 
             nombre=nombre_con_aro
         )
+        modelo_obj.categoria = Categoria.objects.get(
+            nombre=categoria_para_modelo(nombre_marca, nombre_modelo)
+        )
+        modelo_obj.save(update_fields=["categoria"])
 
 print("¡Catálogo de Marcas y Modelos integrado correctamente en la base de datos!")

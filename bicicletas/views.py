@@ -12,7 +12,7 @@ from django.views.generic import (
 )
 
 from .forms import BicicletaForm, CarritoForm, VentaForm
-from .models import Bicicleta, CarritoItem, Categoria, ItemVenta, Venta
+from .models import Bicicleta, CarritoItem, Categoria, ItemVenta, Marca, Modelo, Venta
 
 
 class InicioView(TemplateView):
@@ -51,14 +51,16 @@ class ListaBicicletasView(ListView):
     paginate_by = 12
 
     def get_queryset(self):
-        queryset = Bicicleta.objects.select_related("categoria").all()
+        queryset = Bicicleta.objects.select_related(
+            "categoria_rel", "modelo_rel__marca"
+        ).all()
 
         # Filtro por búsqueda
         busqueda = self.request.GET.get("q")
         if busqueda:
             queryset = queryset.filter(
-                Q(modelo__icontains=busqueda)
-                | Q(marca__icontains=busqueda)
+                Q(modelo_rel__nombre__icontains=busqueda)
+                | Q(modelo_rel__marca__nombre__icontains=busqueda)
                 | Q(descripcion__icontains=busqueda)
             )
 
@@ -70,7 +72,19 @@ class ListaBicicletasView(ListView):
         # Filtro por categoría
         categoria = self.request.GET.get("categoria")
         if categoria:
-            queryset = queryset.filter(categoria_id=categoria)
+            queryset = queryset.filter(categoria_rel_id=categoria)
+
+        marca = self.request.GET.get("marca")
+        if marca:
+            queryset = queryset.filter(modelo_rel__marca_id=marca)
+
+        modelo = self.request.GET.get("modelo")
+        if modelo:
+            queryset = queryset.filter(modelo_rel_id=modelo)
+
+        aro = self.request.GET.get("aro")
+        if aro:
+            queryset = queryset.filter(aro=aro)
 
         # Filtro por estado
         estado = self.request.GET.get("estado")
@@ -99,6 +113,11 @@ class ListaBicicletasView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["categorias"] = Categoria.objects.filter(activa=True)
+        context["marcas"] = Marca.objects.order_by("nombre")
+        context["modelos"] = Modelo.objects.select_related("marca").order_by(
+            "marca__nombre", "nombre"
+        )
+        context["aros"] = [20, 24, 26, 27, 28, 29]
         context["tipos"] = Bicicleta.TIPO_CHOICES
         context["estados"] = Bicicleta.ESTADO_CHOICES
         return context
@@ -114,9 +133,11 @@ class DetalleBicicletaView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         bicicleta = self.object
+        filtros = Q(tipo=bicicleta.tipo)
+        if bicicleta.modelo_rel_id:
+            filtros |= Q(modelo_rel__marca_id=bicicleta.modelo_rel.marca_id)
         context["relacionados"] = Bicicleta.objects.filter(
-            Q(tipo=bicicleta.tipo) | Q(marca=bicicleta.marca),
-            stock__gt=0,
+            filtros, stock__gt=0
         ).exclude(pk=bicicleta.pk)[:4]
         return context
 

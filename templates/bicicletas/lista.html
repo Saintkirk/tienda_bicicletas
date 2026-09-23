@@ -7,6 +7,58 @@
     <h1>Catálogo de bicicletas</h1>
     <a class="btn btn-primary" href="{% url 'crear_bicicleta' %}">Agregar bicicleta</a>
 </div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-3">
+        <label class="form-label" for="filtro-categoria">Categoría</label>
+        <select class="form-select" id="filtro-categoria" name="categoria">
+            <option value="">Todas</option>
+            {% for categoria in categorias %}
+                <option value="{{ categoria.id }}" {% if request.GET.categoria == categoria.id|stringformat:'s' %}selected{% endif %}>{{ categoria.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label" for="filtro-marca">Marca</label>
+        <select class="form-select" id="filtro-marca" name="marca">
+            <option value="">Todas</option>
+            {% for marca in marcas %}
+                <option value="{{ marca.id }}" {% if request.GET.marca == marca.id|stringformat:'s' %}selected{% endif %}>{{ marca.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label" for="filtro-modelo">Modelo</label>
+        <select class="form-select" id="filtro-modelo" name="modelo">
+            <option value="">Todos</option>
+            {% for modelo in modelos %}
+                <option value="{{ modelo.id }}" data-marca="{{ modelo.marca_id }}" {% if request.GET.modelo == modelo.id|stringformat:'s' %}selected{% endif %}>{{ modelo.marca.nombre }} - {{ modelo.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label" for="filtro-tipo">Tipo</label>
+        <select class="form-select" id="filtro-tipo" name="tipo">
+            <option value="">Todos</option>
+            {% for valor, etiqueta in tipos %}
+                <option value="{{ valor }}" {% if request.GET.tipo == valor %}selected{% endif %}>{{ etiqueta }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label" for="filtro-aro">Aro</label>
+        <select class="form-select" id="filtro-aro" name="aro">
+            <option value="">Todos</option>
+            {% for aro in aros %}
+                <option value="{{ aro }}" {% if request.GET.aro == aro|stringformat:'s' %}selected{% endif %}>Aro {{ aro }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="{% url 'lista_bicicletas' %}" class="btn btn-outline-secondary">Limpiar</a>
+    </div>
+</form>
  
 <div class="table-responsive bg-white shadow-sm rounded">
 <table class="table table-striped table-hover mb-0">
@@ -43,4 +95,19 @@
     </tbody>
 </table>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const marca = document.getElementById('filtro-marca');
+        const modelo = document.getElementById('filtro-modelo');
+        if (!marca || !modelo) return;
+
+        marca.addEventListener('change', function () {
+            Array.from(modelo.options).forEach(function (option) {
+                option.hidden = option.value && option.dataset.marca !== marca.value;
+            });
+            if (modelo.selectedOptions[0]?.dataset.marca !== marca.value) modelo.value = '';
+        });
+        marca.dispatchEvent(new Event('change'));
+    });
+</script>
 {% endblock %}
