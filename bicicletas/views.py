@@ -10,6 +10,8 @@ from django.views.generic import (
     TemplateView,
     UpdateView,
 )
+from django.http import JsonResponse
+import json
 
 from .forms import BicicletaForm, CarritoForm, VentaForm
 from .models import Bicicleta, CarritoItem, Categoria, ItemVenta, Marca, Modelo, Venta
@@ -17,7 +19,6 @@ from .models import Bicicleta, CarritoItem, Categoria, ItemVenta, Marca, Modelo,
 
 class InicioView(TemplateView):
     """Página de inicio con estadísticas y productos destacados"""
-
     template_name = "bicicletas/inicio.html"
 
     def get_context_data(self, **kwargs):
@@ -44,54 +45,58 @@ class InicioView(TemplateView):
 
 class ListaBicicletasView(ListView):
     """Lista todas las bicicletas con filtros y búsqueda"""
-
     model = Bicicleta
     template_name = "bicicletas/lista.html"
     context_object_name = "bicicletas"
     paginate_by = 12
 
     def get_queryset(self):
+        # Optimización: select_related para evitar consultas N+1
         queryset = Bicicleta.objects.select_related(
             "categoria_rel", "modelo_rel__marca"
         ).all()
 
-        # Filtro por búsqueda
+        # Filtro por búsqueda general (q)
         busqueda = self.request.GET.get("q")
         if busqueda:
             queryset = queryset.filter(
                 Q(modelo_rel__nombre__icontains=busqueda)
                 | Q(modelo_rel__marca__nombre__icontains=busqueda)
                 | Q(descripcion__icontains=busqueda)
+                | Q(color__icontains=busqueda)
             )
 
-        # Filtro por tipo
-        tipo = self.request.GET.get("tipo")
-        if tipo:
-            queryset = queryset.filter(tipo=tipo)
+        # Filtro por Categoría (ID)
+        categoria_id = self.request.GET.get("categoria")
+        if categoria_id:
+            queryset = queryset.filter(categoria_rel_id=categoria_id)
 
-        # Filtro por categoría
-        categoria = self.request.GET.get("categoria")
-        if categoria:
-            queryset = queryset.filter(categoria_rel_id=categoria)
+        # Filtro por Marca (ID)
+        marca_id = self.request.GET.get("marca")
+        if marca_id:
+            queryset = queryset.filter(modelo_rel__marca_id=marca_id)
 
-        marca = self.request.GET.get("marca")
-        if marca:
-            queryset = queryset.filter(modelo_rel__marca_id=marca)
+        # Filtro por Modelo (ID)
+        modelo_id = self.request.GET.get("modelo")
+        if modelo_id:
+            queryset = queryset.filter(modelo_rel_id=modelo_id)
 
-        modelo = self.request.GET.get("modelo")
-        if modelo:
-            queryset = queryset.filter(modelo_rel_id=modelo)
-
+        # Filtro por Aro (Valor entero)
         aro = self.request.GET.get("aro")
         if aro:
             queryset = queryset.filter(aro=aro)
 
-        # Filtro por estado
+        # Filtro por Estado
         estado = self.request.GET.get("estado")
         if estado:
             queryset = queryset.filter(estado=estado)
 
-        # Filtro por rango de precio
+        # Filtro por Tipo (si existe en tu modelo)
+        tipo = self.request.GET.get("tipo")
+        if tipo:
+            queryset = queryset.filter(tipo=tipo)
+
+        # Rango de Precios
         precio_min = self.request.GET.get("precio_min")
         precio_max = self.request.GET.get("precio_max")
         if precio_min:
@@ -99,33 +104,42 @@ class ListaBicicletasView(ListView):
         if precio_max:
             queryset = queryset.filter(precio__lte=precio_max)
 
-        # Filtro solo disponibles
+        # Solo disponibles (Stock > 0)
         solo_disponibles = self.request.GET.get("disponibles")
-        if solo_disponibles:
+        if solo_disponibles and solo_disponibles.lower() in ['true', '1', 'on']:
             queryset = queryset.filter(stock__gt=0)
 
         # Ordenamiento
         orden = self.request.GET.get("orden", "-fecha_ingreso")
-        queryset = queryset.order_by(orden)
+        # Validar que el orden sea seguro para evitar inyección SQL simple
+        campos_validos = ['precio', '-precio', 'modelo_rel__nombre', '-modelo_rel__nombre', 'fecha_ingreso', '-fecha_ingreso']
+        if orden in campos_validos:
+            queryset = queryset.order_by(orden)
+        else:
+            queryset = queryset.order_by("-fecha_ingreso")
 
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["categorias"] = Categoria.objects.filter(activa=True)
+        # Pasamos las listas para los filtros del sidebar/header
+        context["categorias"] = Categoria.objects.filter(activa=True).order_by("nombre")
         context["marcas"] = Marca.objects.order_by("nombre")
         context["modelos"] = Modelo.objects.select_related("marca").order_by(
             "marca__nombre", "nombre"
         )
-        context["aros"] = [20, 24, 26, 27, 28, 29]
-        context["tipos"] = Bicicleta.TIPO_CHOICES
-        context["estados"] = Bicicleta.ESTADO_CHOICES
+        context["aros"] = [12, 16, 20, 24, 26, 27, 28, 29]
+        context["tipos"] = getattr(Bicicleta, 'TIPO_CHOICES', [])
+        context["estados"] = getattr(Bicicleta, 'ESTADO_CHOICES', [])
+        
+        # Mantener los valores actuales en el contexto para que el formulario los recuerde
+        context["request_get"] = self.request.GET
+        
         return context
 
 
 class DetalleBicicletaView(DetailView):
     """Detalle de una bicicleta específica"""
-
     model = Bicicleta
     template_name = "bicicletas/detalle.html"
     context_object_name = "bicicleta"
@@ -133,9 +147,10 @@ class DetalleBicicletaView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         bicicleta = self.object
-        filtros = Q(tipo=bicicleta.tipo)
+        filtros = Q(categoria_rel=bicicleta.categoria_rel)
         if bicicleta.modelo_rel_id:
             filtros |= Q(modelo_rel__marca_id=bicicleta.modelo_rel.marca_id)
+        
         context["relacionados"] = Bicicleta.objects.filter(
             filtros, stock__gt=0
         ).exclude(pk=bicicleta.pk)[:4]
@@ -144,7 +159,6 @@ class DetalleBicicletaView(DetailView):
 
 class CrearBicicletaView(CreateView):
     """Crear nueva bicicleta"""
-
     model = Bicicleta
     form_class = BicicletaForm
     template_name = "bicicletas/crear.html"
@@ -157,11 +171,31 @@ class CrearBicicletaView(CreateView):
 
 class EditarBicicletaView(UpdateView):
     """Editar bicicleta existente"""
-
     model = Bicicleta
     form_class = BicicletaForm
     template_name = "bicicletas/editar.html"
     success_url = reverse_lazy("lista_bicicletas")
+
+    def get_context_data(self, **kwargs):
+        """
+        Inyectamos datos adicionales para que el JavaScript pueda 
+        restaurar la categoría y el aro al cargar la página de edición.
+        """
+        context = super().get_context_data(**kwargs)
+        bicicleta = self.object
+        
+        # Pasamos los IDs actuales para que JS los use al cargar
+        if bicicleta.modelo_rel:
+            context['initial_modelo_id'] = bicicleta.modelo_rel.id
+            context['initial_marca_id'] = bicicleta.modelo_rel.marca_id
+        
+        if bicicleta.categoria_rel:
+            context['initial_categoria_id'] = bicicleta.categoria_rel.id
+            context['initial_categoria_nombre'] = bicicleta.categoria_rel.nombre
+            
+        context['initial_aro'] = bicicleta.aro
+        
+        return context
 
     def form_valid(self, form):
         messages.success(
@@ -171,20 +205,86 @@ class EditarBicicletaView(UpdateView):
 
 
 class EliminarBicicletaView(DeleteView):
-    """Eliminar bicicleta"""
-
+    """Eliminar bicicleta individual"""
     model = Bicicleta
     template_name = "bicicletas/eliminar.html"
     success_url = reverse_lazy("lista_bicicletas")
 
     def delete(self, request, *args, **kwargs):
-        messages.success(request, "La bicicleta fue eliminada correctamente.")
-        return super().delete(request, *args, **kwargs)
+        obj = self.get_object()
+        nombre_obj = str(obj)
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, f"La bicicleta '{nombre_obj}' ha sido eliminada correctamente.")
+        return response
+
+
+# --- FUNCIÓN: ELIMINACIÓN MÚLTIPLE ---
+def eliminar_multiple_bicicletas(request):
+    """
+    Elimina múltiples bicicletas seleccionadas desde el listado.
+    IMPORTANTE: Debe coincidir con el name='bicicleta_ids' del HTML/JS.
+    """
+    if request.method == "POST":
+        selected_ids = request.POST.getlist('bicicleta_ids')
+        
+        if not selected_ids:
+            messages.warning(request, "No se seleccionaron bicicletas para eliminar.")
+            return redirect("lista_bicicletas")
+        
+        queryset = Bicicleta.objects.filter(pk__in=selected_ids)
+        count = queryset.count()
+        
+        if count == 0:
+            messages.warning(request, "Las bicicletas seleccionadas no existen o ya fueron eliminadas.")
+            return redirect("lista_bicicletas")
+        
+        queryset.delete()
+        messages.success(request, f"Se eliminaron {count} bicicleta(s) correctamente.")
+        
+    return redirect("lista_bicicletas")
+
+
+# --- VISTA AJAX PARA FILTRADO DINÁMICO ---
+def obtener_modelos_por_marca(request):
+    """
+    Devuelve modelos, categorías y aros sugeridos según la marca seleccionada.
+    Uso: GET /bicicletas/api/modelos-por-marca/?marca_id=X
+    """
+    marca_id = request.GET.get('marca_id')
+    
+    if not marca_id:
+        return JsonResponse({'error': 'Falta ID de marca'}, status=400)
+
+    try:
+        modelos = Modelo.objects.filter(marca_id=marca_id).select_related('categoria')
+        datos_modelos = []
+        
+        for m in modelos:
+            aros_sugeridos = []
+            if "(Aro" in m.nombre:
+                try:
+                    parte_aros = m.nombre.split("(Aro")[-1].split(")")[0].strip()
+                    if parte_aros.isdigit():
+                        aros_sugeridos = [int(parte_aros)]
+                except:
+                    pass
+            
+            datos_modelos.append({
+                'id': m.id,
+                'nombre': m.nombre,
+                'categoria_id': m.categoria_id,
+                'categoria_nombre': m.categoria.nombre if m.categoria else '',
+                'aros_sugeridos': aros_sugeridos
+            })
+            
+        return JsonResponse({'modelos': datos_modelos})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 class CarritoView(TemplateView):
     """Vista del carrito de compras"""
-
     template_name = "bicicletas/carrito.html"
 
     def get_context_data(self, **kwargs):
@@ -240,10 +340,13 @@ def eliminar_del_carrito(request, pk):
     """Eliminar item del carrito"""
     session_key = request.session.session_key
     if session_key:
-        CarritoItem.objects.filter(
+        count, _ = CarritoItem.objects.filter(
             session_key=session_key, bicicleta_id=pk
         ).delete()
-        messages.success(request, "Producto eliminado del carrito")
+        if count > 0:
+            messages.success(request, "Producto eliminado del carrito")
+        else:
+            messages.warning(request, "El producto no estaba en el carrito")
     return redirect("carrito")
 
 
@@ -273,7 +376,6 @@ def actualizar_carrito(request, pk):
 
 class CrearVentaView(CreateView):
     """Procesar venta desde el carrito"""
-
     model = Venta
     form_class = VentaForm
     template_name = "bicicletas/crear_venta.html"
@@ -331,7 +433,6 @@ class CrearVentaView(CreateView):
 
 class DetalleVentaView(DetailView):
     """Detalle de una venta"""
-
     model = Venta
     template_name = "bicicletas/detalle_venta.html"
     context_object_name = "venta"
@@ -339,7 +440,6 @@ class DetalleVentaView(DetailView):
 
 class ListaVentasView(ListView):
     """Lista todas las ventas"""
-
     model = Venta
     template_name = "bicicletas/lista_ventas.html"
     context_object_name = "ventas"

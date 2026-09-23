@@ -1,113 +1,334 @@
 {% extends "base.html" %}
- 
-{% block title %}Bicicletas{% endblock %}
- 
+
+{% block title %}Catálogo de Bicicletas{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Catálogo de bicicletas</h1>
-    <a class="btn btn-primary" href="{% url 'crear_bicicleta' %}">Agregar bicicleta</a>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0 fw-bold text-dark">Catálogo de bicicletas</h1>
+    <a class="btn btn-primary fw-bold shadow-sm" href="{% url 'crear_bicicleta' %}">
+        <i class="bi bi-plus-circle"></i> Agregar bicicleta
+    </a>
 </div>
 
-<form method="get" class="row g-2 mb-3">
-    <div class="col-md-3">
-        <label class="form-label" for="filtro-categoria">Categoría</label>
-        <select class="form-select" id="filtro-categoria" name="categoria">
-            <option value="">Todas</option>
-            {% for categoria in categorias %}
-                <option value="{{ categoria.id }}" {% if request.GET.categoria == categoria.id|stringformat:'s' %}selected{% endif %}>{{ categoria.nombre }}</option>
-            {% endfor %}
-        </select>
+<!-- Mensajes Django -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- BARRA DE ACCIONES CONTEXTUAL (Solo visible si hay registros) -->
+{% if bicicletas %}
+<div class="card shadow-sm mb-3 border-start border-4 border-danger bg-light sticky-top" style="top: 10px; z-index: 1000;">
+    <div class="card-body py-2 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="selectTodos">
+                <label class="form-check-label fw-bold small" for="selectTodos">Seleccionar todo</label>
+            </div>
+            <span class="text-muted small" id="contadorSeleccionados">(0 seleccionados)</span>
+        </div>
+        
+        <!-- Formulario de Eliminación Múltiple -->
+        <form method="post" action="{% url 'eliminar_multiple_bicicletas' %}" id="formEliminacionMultiple">
+            {% csrf_token %}
+            <!-- Los inputs ocultos se generan con JS -->
+            <div id="contenedorIDs"></div>
+            
+            <button type="button" class="btn btn-danger btn-sm fw-bold" id="btnEliminarMultiple" disabled data-bs-toggle="modal" data-bs-target="#modalConfirmacion">
+                <i class="bi bi-trash"></i> Eliminar Seleccionados (<span id="countBtn">0</span>)
+            </button>
+        </form>
     </div>
-    <div class="col-md-2">
-        <label class="form-label" for="filtro-marca">Marca</label>
-        <select class="form-select" id="filtro-marca" name="marca">
-            <option value="">Todas</option>
-            {% for marca in marcas %}
-                <option value="{{ marca.id }}" {% if request.GET.marca == marca.id|stringformat:'s' %}selected{% endif %}>{{ marca.nombre }}</option>
-            {% endfor %}
-        </select>
+</div>
+{% endif %}
+
+<!-- Modal de Confirmación Personalizado -->
+<div class="modal fade" id="modalConfirmacion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill"></i> Confirmar Eliminación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Se van a eliminar <strong id="cantidadModal" class="fw-bold text-danger">0</strong> bicicletas.</p>
+                <p class="small text-muted mb-0">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarEliminar">Sí, Eliminar</button>
+            </div>
+        </div>
     </div>
-    <div class="col-md-3">
-        <label class="form-label" for="filtro-modelo">Modelo</label>
-        <select class="form-select" id="filtro-modelo" name="modelo">
-            <option value="">Todos</option>
-            {% for modelo in modelos %}
-                <option value="{{ modelo.id }}" data-marca="{{ modelo.marca_id }}" {% if request.GET.modelo == modelo.id|stringformat:'s' %}selected{% endif %}>{{ modelo.marca.nombre }} - {{ modelo.nombre }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-2">
-        <label class="form-label" for="filtro-tipo">Tipo</label>
-        <select class="form-select" id="filtro-tipo" name="tipo">
-            <option value="">Todos</option>
-            {% for valor, etiqueta in tipos %}
-                <option value="{{ valor }}" {% if request.GET.tipo == valor %}selected{% endif %}>{{ etiqueta }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-2">
-        <label class="form-label" for="filtro-aro">Aro</label>
-        <select class="form-select" id="filtro-aro" name="aro">
-            <option value="">Todos</option>
-            {% for aro in aros %}
-                <option value="{{ aro }}" {% if request.GET.aro == aro|stringformat:'s' %}selected{% endif %}>Aro {{ aro }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-12 d-flex gap-2">
-        <button type="submit" class="btn btn-primary">Filtrar</button>
-        <a href="{% url 'lista_bicicletas' %}" class="btn btn-outline-secondary">Limpiar</a>
+</div>
+
+<!-- Formulario de Filtros -->
+<form method="get" class="card card-body shadow-sm mb-4 bg-light border-0">
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label small text-muted fw-bold" for="filtro-categoria">Categoría</label>
+            <select class="form-select form-select-sm" id="filtro-categoria" name="categoria">
+                <option value="">Todas</option>
+                {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}" {% if request.GET.categoria == categoria.id|stringformat:'s' %}selected{% endif %}>{{ categoria.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted fw-bold" for="filtro-marca">Marca</label>
+            <select class="form-select form-select-sm" id="filtro-marca" name="marca">
+                <option value="">Todas</option>
+                {% for marca in marcas %}
+                    <option value="{{ marca.id }}" {% if request.GET.marca == marca.id|stringformat:'s' %}selected{% endif %}>{{ marca.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted fw-bold" for="filtro-modelo">Modelo</label>
+            <select class="form-select form-select-sm" id="filtro-modelo" name="modelo">
+                <option value="">Todos</option>
+                {% for modelo in modelos %}
+                    <option value="{{ modelo.id }}" data-marca="{{ modelo.marca_id }}" {% if request.GET.modelo == modelo.id|stringformat:'s' %}selected{% endif %}>{{ modelo.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted fw-bold" for="filtro-aro">Aro</label>
+            <select class="form-select form-select-sm" id="filtro-aro" name="aro">
+                <option value="">Todos</option>
+                {% for aro in aros %}
+                    <option value="{{ aro }}" {% if request.GET.aro == aro|stringformat:'s' %}selected{% endif %}>{{ aro }} pulgadas</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+             <label class="form-label small text-muted fw-bold" for="filtro-precio-min">Precio Mínimo</label>
+             <input type="number" class="form-control form-control-sm" id="filtro-precio-min" name="precio_min" value="{{ request.GET.precio_min }}" placeholder="$0">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small text-muted fw-bold" for="filtro-precio-max">Precio Máximo</label>
+            <input type="number" class="form-control form-control-sm" id="filtro-precio-max" name="precio_max" value="{{ request.GET.precio_max }}" placeholder="Ilimitado">
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <div class="form-check mb-2 ms-2">
+                <input class="form-check-input" type="checkbox" name="disponibles" value="1" id="checkDisponibles" {% if request.GET.disponibles %}checked{% endif %}>
+                <label class="form-check-label small text-muted fw-bold" for="checkDisponibles">Solo con stock</label>
+            </div>
+        </div>
+        <div class="col-12 d-flex gap-2 mt-3 pt-2 border-top">
+            <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold"><i class="bi bi-funnel"></i> Filtrar</button>
+            <a href="{% url 'lista_bicicletas' %}" class="btn btn-outline-secondary btn-sm px-4"><i class="bi bi-x-circle"></i> Limpiar</a>
+        </div>
     </div>
 </form>
- 
-<div class="table-responsive bg-white shadow-sm rounded">
-<table class="table table-striped table-hover mb-0">
-    <thead class="table-dark">
-        <tr>
-            <th>Marca</th>
-            <th>Modelo</th>
-            <th>Tipo</th>
-            <th>Aro</th>
-            <th>Precio</th>
-            <th>Stock</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for bicicleta in bicicletas %}
-        <tr>
-            <td>{{ bicicleta.marca }}</td>
-            <td>{{ bicicleta.modelo }}</td>
-            <td>{{ bicicleta.get_tipo_display }}</td>
-            <td>{{ bicicleta.aro }}</td>
-            <td>${{ bicicleta.precio }}</td>
-            <td>{{ bicicleta.stock }}</td>
-            <td>
-                <a class="btn btn-warning btn-sm" href="{% url 'editar_bicicleta' bicicleta.pk %}">Editar</a>
-                <a class="btn btn-danger btn-sm" href="{% url 'eliminar_bicicleta' bicicleta.pk %}">Eliminar</a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="7" class="text-center py-4">No hay bicicletas registradas.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-</div>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const marca = document.getElementById('filtro-marca');
-        const modelo = document.getElementById('filtro-modelo');
-        if (!marca || !modelo) return;
 
-        marca.addEventListener('change', function () {
-            Array.from(modelo.options).forEach(function (option) {
-                option.hidden = option.value && option.dataset.marca !== marca.value;
+<!-- Tabla -->
+<div class="card shadow-sm border-0 overflow-hidden">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 text-muted fw-bold">Resultados: {{ page_obj.paginator.count }} bicicletas {% if paginator.num_pages > 1 %}(Página {{ page_obj.number }} de {{ paginator.num_pages }}){% endif %}</h5>
+    </div>
+    
+    <div class="card-body p-0">
+        {% if bicicletas %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-dark text-white">
+                    <tr>
+                        <!-- Checkbox Header -->
+                        <th scope="col" class="ps-4 text-center" style="width: 50px;">
+                            <input type="checkbox" class="form-check-input" id="headerCheckbox" style="cursor: pointer;" disabled>
+                        </th>
+                        <th scope="col" class="ps-3">Marca</th>
+                        <th scope="col">Modelo</th>
+                        <th scope="col">Categoría</th>
+                        <th scope="col">Aro</th>
+                        <th scope="col">Precio</th>
+                        <th scope="col" class="text-center">Stock</th>
+                        <th scope="col" class="text-end pe-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bicicleta in bicicletas %}
+                    <tr class="align-middle {% if bicicleta.stock == 0 %}table-light text-muted{% endif %}" id="fila-{{ bicicleta.pk }}">
+                        <!-- Checkbox Fila -->
+                        <td class="text-center ps-4">
+                            <input type="checkbox" 
+                                   class="form-check-input item-checkbox" 
+                                   value="{{ bicicleta.pk }}"
+                                   style="cursor: pointer; width: 1.2em; height: 1.2em;">
+                        </td>
+                        <td class="ps-3 fw-bold text-dark">
+                            {% if bicicleta.modelo_rel and bicicleta.modelo_rel.marca %}{{ bicicleta.modelo_rel.marca.nombre }}
+                            {% else %}<span class="text-muted fst-italic">N/A</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if bicicleta.modelo_rel %}{{ bicicleta.modelo_rel.nombre }}
+                            {% else %}<span class="text-muted fst-italic">Sin modelo</span>{% endif %}
+                            {% if bicicleta.es_oferta %}<span class="badge bg-danger ms-1"><i class="bi bi-tag"></i> Oferta</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if bicicleta.categoria_rel %}<span class="badge bg-info text-dark">{{ bicicleta.categoria_rel.nombre }}</span>
+                            {% else %}<span class="badge bg-secondary">Sin categoría</span>{% endif %}
+                        </td>
+                        <td>{{ bicicleta.aro }}"</td>
+                        <td class="fw-bold text-success fs-6">${{ bicicleta.precio }}</td>
+                        <td class="text-center">
+                            {% if bicicleta.stock > 10 %}<span class="badge bg-success rounded-pill px-3">{{ bicicleta.stock }}</span>
+                            {% elif bicicleta.stock > 0 %}<span class="badge bg-warning text-dark rounded-pill px-3">{{ bicicleta.stock }}</span>
+                            {% else %}<span class="badge bg-danger rounded-pill px-3">Agotado</span>{% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a class="btn btn-warning btn-sm text-white me-2 shadow-sm d-inline-flex align-items-center" href="{% url 'editar_bicicleta' bicicleta.pk %}" title="Editar">
+                                <i class="bi bi-pencil-square me-1"></i> Editar
+                            </a>
+                            <a class="btn btn-danger btn-sm shadow-sm d-inline-flex align-items-center" href="{% url 'eliminar_bicicleta' bicicleta.pk %}" title="Eliminar">
+                                <i class="bi bi-trash me-1"></i> Eliminar
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h3 class="mt-3 text-muted">No se encontraron bicicletas</h3>
+            <p class="text-muted">Intenta ajustar los filtros o agrega una nueva bicicleta.</p>
+            <a href="{% url 'crear_bicicleta' %}" class="btn btn-primary mt-2">Agregar bicicleta</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Paginación -->
+    {% if is_paginated %}
+    <div class="card-footer bg-white py-3 border-top-0">
+        <nav aria-label="Paginación">
+            <ul class="pagination justify-content-center mb-0 gap-1">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page=1{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.precio_min %}&precio_min={{ request.GET.precio_min }}{% endif %}{% if request.GET.precio_max %}&precio_max={{ request.GET.precio_max }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-double-left"></i></a></li>
+                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.previous_page_number }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.precio_min %}&precio_min={{ request.GET.precio_min }}{% endif %}{% if request.GET.precio_max %}&precio_max={{ request.GET.precio_max }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-left"></i> Anterior</a></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link border-0 shadow-sm fw-bold">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ num }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.precio_min %}&precio_min={{ request.GET.precio_min }}{% endif %}{% if request.GET.precio_max %}&precio_max={{ request.GET.precio_max }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.next_page_number }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.precio_min %}&precio_min={{ request.GET.precio_min }}{% endif %}{% if request.GET.precio_max %}&precio_max={{ request.GET.precio_max }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}">Siguiente <i class="bi bi-chevron-right"></i></a></li>
+                <li class="page-item"><a class="page-link border-0 shadow-sm" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.marca %}&marca={{ request.GET.marca }}{% endif %}{% if request.GET.modelo %}&modelo={{ request.GET.modelo }}{% endif %}{% if request.GET.aro %}&aro={{ request.GET.aro }}{% endif %}{% if request.GET.precio_min %}&precio_min={{ request.GET.precio_min }}{% endif %}{% if request.GET.precio_max %}&precio_max={{ request.GET.precio_max }}{% endif %}{% if request.GET.disponibles %}&disponibles={{ request.GET.disponibles }}{% endif %}"><i class="bi bi-chevron-double-right"></i></a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // --- Lógica de Filtros ---
+    const marcaSelect = document.getElementById('filtro-marca');
+    const modeloSelect = document.getElementById('filtro-modelo');
+    
+    if (marcaSelect && modeloSelect) {
+        marcaSelect.addEventListener('change', function () {
+            const marcaId = this.value;
+            Array.from(modeloSelect.options).forEach(function (option) {
+                if (option.value === "") { option.hidden = false; } 
+                else { option.hidden = marcaId && option.dataset.marca !== marcaId; }
             });
-            if (modelo.selectedOptions[0]?.dataset.marca !== marca.value) modelo.value = '';
+            if (modeloSelect.value && modeloSelect.selectedOptions[0]?.dataset.marca !== marcaId) { modeloSelect.value = ''; }
         });
-        marca.dispatchEvent(new Event('change'));
-    });
+        marcaSelect.dispatchEvent(new Event('change'));
+    }
+
+    // --- Lógica de Selección Múltiple ---
+    const headerCheckbox = document.getElementById('headerCheckbox');
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    const btnEliminarMultiple = document.getElementById('btnEliminarMultiple');
+    const countBtn = document.getElementById('countBtn');
+    const contadorTexto = document.getElementById('contadorSeleccionados');
+    const contenedorIDs = document.getElementById('contenedorIDs');
+    const cantidadModal = document.getElementById('cantidadModal');
+    const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
+    const formEliminacion = document.getElementById('formEliminacionMultiple');
+
+    if (itemCheckboxes.length > 0) {
+        headerCheckbox.disabled = false;
+
+        // Evento "Seleccionar Todo"
+        headerCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            itemCheckboxes.forEach(cb => {
+                cb.checked = isChecked;
+                cb.dispatchEvent(new Event('change')); // Disparar evento individual para actualizar UI
+            });
+        });
+
+        // Evento Change en cada item
+        itemCheckboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                updateSelectionState();
+                
+                // Si desmarcan uno manualmente, desmarcar header
+                if (!this.checked) {
+                    headerCheckbox.checked = false;
+                } else {
+                    // Si todos están marcados, marcar header
+                    const allChecked = Array.from(itemCheckboxes).every(c => c.checked);
+                    headerCheckbox.checked = allChecked;
+                }
+            });
+        });
+
+        function updateSelectionState() {
+            const selectedCount = Array.from(itemCheckboxes).filter(cb => cb.checked).length;
+            
+            // Actualizar textos
+            countBtn.textContent = selectedCount;
+            contadorTexto.textContent = `(${selectedCount} seleccionados)`;
+            cantidadModal.textContent = selectedCount;
+            
+            // Activar/Desactivar botón
+            if (selectedCount > 0) {
+                btnEliminarMultiple.disabled = false;
+                btnEliminarMultiple.classList.remove('btn-secondary');
+                btnEliminarMultiple.classList.add('btn-danger');
+            } else {
+                btnEliminarMultiple.disabled = true;
+                btnEliminarMultiple.classList.add('btn-secondary');
+                btnEliminarMultiple.classList.remove('btn-danger');
+            }
+
+            // Generar inputs ocultos para el formulario
+            contenedorIDs.innerHTML = '';
+            itemCheckboxes.forEach(cb => {
+                if (cb.checked) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'bicicleta_ids'; // DEBE COINCIDIR CON VIEWS.PY
+                    input.value = cb.value;
+                    contenedorIDs.appendChild(input);
+                }
+            });
+        }
+    }
+
+    // --- Manejo del Modal y Envío ---
+    if (btnConfirmarEliminar) {
+        btnConfirmarEliminar.addEventListener('click', function() {
+            // Enviar el formulario real
+            formEliminacion.submit();
+        });
+    }
+});
 </script>
 {% endblock %}

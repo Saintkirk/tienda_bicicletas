@@ -1,17 +1,37 @@
 {% extends "base.html" %}
- 
-{% block title %}Eliminar bicicleta{% endblock %}
- 
+
+{% block title %}Eliminar Bicicleta{% endblock %}
+
 {% block content %}
-<div class="card border-danger shadow-sm">
-    <div class="card-body">
-        <h1 class="text-danger">Confirmar eliminación</h1>
-        <p>¿Seguro que deseas eliminar la bicicleta <strong>{{ bicicleta }}</strong>?</p>
-        <form method="post">
-            {% csrf_token %}
-            <button class="btn btn-danger" type="submit">Sí, eliminar</button>
-            <a class="btn btn-secondary" href="{% url 'lista_bicicletas' %}">Cancelar</a>
-        </form>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-triangle-fill"></i> Confirmar Eliminación</h4>
+                </div>
+                <div class="card-body text-center">
+                    <p class="lead">¿Estás seguro de que deseas eliminar la siguiente bicicleta?</p>
+                    
+                    <div class="alert alert-light border mt-3">
+                        <h5 class="fw-bold">{{ object.modelo_rel.marca.nombre }} - {{ object.modelo_rel.nombre }}</h5>
+                        <p class="mb-1"><strong>Aro:</strong> {{ object.aro }}"</p>
+                        <p class="mb-1"><strong>Precio:</strong> ${{ object.precio }}</p>
+                        <p class="mb-0"><strong>Stock:</strong> {{ object.stock }}</p>
+                    </div>
+
+                    <p class="text-danger small mt-3">
+                        <strong>Advertencia:</strong> Esta acción no se puede deshacer y se eliminarán todos los registros asociados.
+                    </p>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger px-4 me-2">Sí, Eliminar</button>
+                        <a href="{% url 'lista_bicicletas' %}" class="btn btn-secondary px-4">Cancelar</a>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
